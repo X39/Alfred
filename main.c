@@ -142,7 +142,7 @@ bool chatcmd_save(IRCHANDLE handle, const irc_command* cmd, unsigned int argc, c
 
 bool chatcmd_whoareyou(IRCHANDLE handle, const irc_command* cmd, unsigned int argc, const char** args, char* buffer, unsigned int buffer_size)
 {
-	strncpy(buffer, buffer_size, "I am a bot. You can see my src at http://github.com/X39/Alfred");
+	strncpy(buffer, "I am a bot. You can see my src at https://github.com/X39/Alfred/", buffer_size);
 	return true;
 }
 

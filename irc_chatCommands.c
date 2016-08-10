@@ -262,9 +262,9 @@ void irc_chat_commands_uninit(void)
 ///	foo;bar;foobar=something;
 void irc_chat_commands_add_command(CHATCOMMAND cmd, const char* command, const char* format, bool auth)
 {
-	char* strstrres;
-	char* strstrres2;
-	char* strstrres3;
+	const char* strstrres;
+	const char* strstrres2;
+	const char* strstrres3;
 	char tmp[BUFF_SIZE_SMALL];
 	unsigned int args_index = 0;
 	unsigned int size;
