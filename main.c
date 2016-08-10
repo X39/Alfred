@@ -16,6 +16,8 @@
 
 IRCHANDLE handle;
 CONFIG config;
+time_t startTime;
+unsigned long serveCount = 0;
 
 
 int handle_ENDOFMOTD(IRCHANDLE handle, const irc_command* cmd)
@@ -88,6 +90,7 @@ bool chatcmd_roll(IRCHANDLE handle, const irc_command* cmd, unsigned int argc, c
 	}
 	val = rand() % val + 1;
 	snprintf(buffer, buffer_size, "%d", val);
+	serveCount++;
 	return true;
 }
 
@@ -115,6 +118,7 @@ bool chatcmd_join(IRCHANDLE handle, const irc_command* cmd, unsigned int argc, c
 	{
 		snprintf(buffer, buffer_size, "You will find me there Master!");
 	}
+	serveCount++;
 	return true;
 }
 
@@ -131,18 +135,41 @@ bool chatcmd_leave(IRCHANDLE handle, const irc_command* cmd, unsigned int argc, 
 			break;
 		}
 	}
+	serveCount++;
 	return false;
 }
 
 bool chatcmd_save(IRCHANDLE handle, const irc_command* cmd, unsigned int argc, const char** args, char* buffer, unsigned int buffer_size)
 {
 	snprintf(buffer, buffer_size, "Tried to save config. Result: %d", config_save(config));
+	serveCount++;
 	return true;
 }
 
 bool chatcmd_whoareyou(IRCHANDLE handle, const irc_command* cmd, unsigned int argc, const char** args, char* buffer, unsigned int buffer_size)
 {
 	strncpy(buffer, "I am a bot. You can see my src at https://github.com/X39/Alfred/", buffer_size);
+	serveCount++;
+	return true;
+}
+bool chatcmd_howareyou(IRCHANDLE handle, const irc_command* cmd, unsigned int argc, const char** args, char* buffer, unsigned int buffer_size)
+{
+	size_t size;
+	size = strftime(buffer, buffer_size, "I am fine sir. I am running since %c UTC%z. ", localtime(&startTime));
+	buffer += size;
+	buffer_size -= size;
+	serveCount++;
+	snprintf(buffer, buffer_size, "I also tried to serve as butler %lu times now. Thanks for asking.", serveCount);
+	return true;
+}
+bool chatcmd_fact(IRCHANDLE handle, const irc_command* cmd, unsigned int argc, const char** args, char* buffer, unsigned int buffer_size)
+{
+	int size = config_get_key_size(config, "fact");
+	if (size == 0)
+		strncpy(buffer, random_error_message(), buffer_size);
+	else
+		snprintf(buffer, buffer_size, "With pleasure Sir. Did you know that %s?", config_get_key(config, "fact", rand() % size));
+	serveCount++;
 	return true;
 }
 
@@ -194,6 +221,7 @@ int main(int argc, char** argv)
 	
 	
 	srand(time(NULL));
+	startTime = time(NULL);
 	config_load(config);
 
 	irc_chat_commands_init(config);
@@ -202,6 +230,8 @@ int main(int argc, char** argv)
 	irc_chat_commands_add_command(chatcmd_leave, "leave", "", true);
 	irc_chat_commands_add_command(chatcmd_save, "save", "", true);
 	irc_chat_commands_add_command(chatcmd_whoareyou, "who are you", "", false);
+	irc_chat_commands_add_command(chatcmd_howareyou, "how are you", "", false);
+	irc_chat_commands_add_command(chatcmd_fact, "fact", "", false);
 
 	#ifdef WIN32
 	SetConsoleCtrlHandler(handle_SIGTERM, TRUE);

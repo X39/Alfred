@@ -2,7 +2,7 @@
 
 #define BUFF_SIZE_LARGE 4096
 #define BUFF_SIZE_SMALL 256
-#define BUFF_SIZE_TINY 32
+#define BUFF_SIZE_TINY 64
 #define BUFF_INCREASE BUFF_SIZE_TINY
 
 //#define DEBUG

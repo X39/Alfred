@@ -235,7 +235,7 @@ int config_set_key(CONFIG config, const char* key, const char* value, int index)
 	if (kp->lastindex_values == kp->size_values)
 	{
 		kp->size_values += BUFF_INCREASE;
-		kp->values = (char**)realloc(kp->values, sizeof(char) * kp->size_values);
+		kp->values = (char**)realloc(kp->values, sizeof(char*) * kp->size_values);
 	}
 	return 0;
 }

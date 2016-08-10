@@ -151,7 +151,6 @@ int FNC(poll)(IRCHANDLE handle, char* buffer, unsigned int bufferSize)
 		strrepchr(buffer, '\r', ' ');
 
 		printf("[ <--]\t%s\n", buffer);
-		fflush(stdout);
 
 		for (i = 0; i < irc->callbacks_raw_next; i++)
 		{
