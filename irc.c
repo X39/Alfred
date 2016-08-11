@@ -86,7 +86,7 @@ void FNC(close)(IRCHANDLE* handle)
 {
 	if (handle == NULL)
 		return;
-	IRC* irc = (IRC*)handle;
+	IRC* irc = (IRC*)*handle;
 	#ifdef DEBUG
 	printf("[DEBU]\tirc_client_close - closing socket\n");
 	#endif

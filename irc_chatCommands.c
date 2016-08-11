@@ -248,7 +248,8 @@ void irc_chat_commands_uninit(void)
 			free(containers[i].args[j]);
 		}
 		free(containers[i].name);
-		free(containers[i].args);
+		if(containers[i].args_size > 0)
+			free(containers[i].args);
 	}
 	free(containers);
 }
