@@ -19,7 +19,7 @@ KEYPAIR* config_get_keypair(CONFIG config, const char* key)
 	#endif
 	for (i = 0; i < conf->lastindex_keypair_array; i++)
 	{
-		if (!str_cmpi(conf->keypair_array[i].key, key))
+		if (!strcmpi(conf->keypair_array[i].key, key))
 		{
 			return conf->keypair_array + i;
 		}

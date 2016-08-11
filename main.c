@@ -5,6 +5,7 @@
 #include "config.h"
 #include "irc_chatCommands.h"
 #include "string_op.h"
+#include "irc_user.h"
 
 #include <stdio.h>
 #include <malloc.h>
@@ -49,7 +50,9 @@ int handle_ENDOFMOTD(IRCHANDLE handle, const irc_command* cmd)
 			irc_client_send(handle, buffer, strlen(buffer));
 			irc_client_poll(handle, buffer, BUFF_SIZE_SMALL);
 		}
+		return true;
 	}
+	return false;
 }
 int handle_INVITE(IRCHANDLE handle, const irc_command* cmd)
 {
@@ -65,7 +68,7 @@ int handle_INVITE(IRCHANDLE handle, const irc_command* cmd)
 
 		for (i = config_get_key_size(config, "channel"); i >= 0; i--)
 		{
-			if (str_cmpi(config_get_key(config, "channel", i), cmd->content))
+			if (strcmpi(config_get_key(config, "channel", i), cmd->content))
 			{
 				break;
 			}
@@ -74,9 +77,9 @@ int handle_INVITE(IRCHANDLE handle, const irc_command* cmd)
 		{
 			config_set_key(config, "channel", cmd->content, -1);
 		}
-		return 1;
+		return true;
 	}
-	return 0;
+	return false;
 }
 
 bool chatcmd_roll(IRCHANDLE handle, const irc_command* cmd, unsigned int argc, const char** args, char* buffer, unsigned int buffer_size)
@@ -103,7 +106,7 @@ bool chatcmd_join(IRCHANDLE handle, const irc_command* cmd, unsigned int argc, c
 	{
 		for (i = config_get_key_size(config, "channel") - 1; i >= 0; i--)
 		{
-			if (str_cmpi(config_get_key(config, "channel", i), args[0]))
+			if (strcmpi(config_get_key(config, "channel", i), args[0]))
 			{
 				break;
 			}
@@ -129,7 +132,7 @@ bool chatcmd_leave(IRCHANDLE handle, const irc_command* cmd, unsigned int argc, 
 	irc_client_send(handle, buffer, strlen(buffer));
 	for (i = config_get_key_size(config, "channel") - 1; i >= 0; i--)
 	{
-		if (str_cmpi(config_get_key(config, "channel", i), cmd->receiver))
+		if (strcmpi(config_get_key(config, "channel", i), cmd->receiver))
 		{
 			config_remove_key(config, "channel", i);
 			break;
