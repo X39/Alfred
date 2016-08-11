@@ -155,7 +155,7 @@ bool chatcmd_whoareyou(IRCHANDLE handle, const irc_command* cmd, unsigned int ar
 bool chatcmd_howareyou(IRCHANDLE handle, const irc_command* cmd, unsigned int argc, const char** args, char* buffer, unsigned int buffer_size)
 {
 	size_t size;
-	size = strftime(buffer, buffer_size, "I am fine sir. I am running since %c UTC%z. ", localtime(&startTime));
+	size = strftime(buffer, buffer_size, "I am fine sir. I am running since %d.%m.%Y %X UTC%z. ", localtime(&startTime));
 	buffer += size;
 	buffer_size -= size;
 	serveCount++;
