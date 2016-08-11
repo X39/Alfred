@@ -254,6 +254,14 @@ int FNC(handle_commandCallbacks)(IRCHANDLE handle, const char* msg, unsigned int
 			{
 				cmd.type = IRC_INVITE;
 			}
+			else if (strstr(type, "PART"))
+			{
+				cmd.type = IRC_PART;
+			}
+			else if (strstr(type, "JOIN"))
+			{
+				cmd.type = IRC_JOIN;
+			}
 			else
 			{
 				printf("[INFO]\tUnknown type '%s'\n", type);
