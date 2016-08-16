@@ -5,11 +5,8 @@
 #include <malloc.h>
 #include <string.h>
 #include <stdio.h>
+#include <stdlib.h>
 
-
-#ifndef WIN32
-#define alloca alloca
-#endif
 
 CONFIG config;
 const char* botname;
@@ -18,34 +15,77 @@ COMMANDCONTAINER* containers;
 unsigned int containers_index;
 unsigned int containers_size;
 
+extern const char* extract_string_from_key(KEY* key);
 
-const char* random_error_message(void)
+const char* random_response(const char* kind)
 {
-	int size = config_get_key_size(config, "errormsg");
-	if (size == 0)
+	KEY responses = config_get_key(config, "root/responses");
+	int responses_size = config_key_get_size(responses);
+	unsigned int i, j, k = 0;
+	KEY child, child2;
+	bool flag = false;
+	for (i = 0; i < responses_size; i++)
+	{
+		child = config_key_get_children(responses)[i];
+		for (j = 0; j < config_key_get_size(child); j++)
+		{
+			child2 = config_key_get_children(child)[i];
+			switch (config_key_get_type(child2))
+			{
+				case DATATYPE_ARG:
+				if (!strcmpi(config_key_get_string(child2), kind))
+				{
+					k++;
+				}
+				break;
+			}
+		}
+	}
+	if(k == 0)
 		return "NO MESSAGE SET";
-	return config_get_key(config, "errormsg", rand() % size);
+	k = rand() % k;
+	for (i = 0; i < responses_size; i++)
+	{
+		child = config_key_get_children(responses)[i];
+		for (j = 0; j < config_key_get_size(child); j++)
+		{
+			child2 = config_key_get_children(child)[i];
+			switch (config_key_get_type(child2))
+			{
+				case DATATYPE_ARG:
+				if (!strcmpi(config_key_get_string(child2), kind))
+				{
+					k--;
+					if (k == 0)
+						flag = true;
+				}
+				break;
+				case DATATYPE_STRING:
+				if (flag)
+				{
+					return config_key_get_string(child2);
+				}
+				break;
+			}
+		}
+	}
+	return "ERR0R WHILE EXTRACTING RANDOM MESSAGE";
 }
-const char* random_unknowncommand_message(void)
-{
-	int size = config_get_key_size(config, "unknowncommand");
-	if (size == 0)
-		return "NO MESSAGE SET";
-	return config_get_key(config, "unknowncommand", rand() % size);
-}
-const char* random_notallowed_message(void)
-{
-	int size = config_get_key_size(config, "notallowed");
-	if (size == 0)
-		return "NO MESSAGE SET";
-	return config_get_key(config, "notallowed", rand() % size);
-}
+const char* random_error_message(void) { return random_response("error"); }
+const char* random_unknowncommand_message(void) { return random_response("unknown"); }
+const char* random_notallowed_message(void) { return random_response("unauthorized"); }
 bool is_auth_user(const char* user)
 {
-	int size = config_get_key_size(config, "authuser");
-	for (size--; size >= 0; size--)
+	KEY admins = config_get_key(config, "root/admins");
+	int admins_size = config_key_get_size(admins);
+	unsigned int i;
+	KEY child;
+	for (i = 0; i < admins_size; i++)
 	{
-		if (!strcmp(config_get_key(config, "authuser", size), user))
+		child = config_key_get_children(admins)[i];
+		if (strcmpi(config_key_get_name(child), "user"))
+			continue;
+		if (!strcmp(extract_string_from_key(child), user))
 			return true;
 	}
 	return false;
@@ -115,7 +155,7 @@ bool chatcmd_help(IRCHANDLE handle, const irc_command* cmd, unsigned int argc, c
 			}
 		}
 	}
-	snprintf(b, b_size, "\r\n", cmd->receiver);
+	snprintf(b, b_size, "\r\n");
 	b -= BUFF_SIZE_LARGE - b_size;
 	irc_client_send(handle, b, strlen(b));
 	return false;
@@ -233,7 +273,7 @@ void irc_chat_commands_init(CONFIG cfg)
 	containers = (COMMANDCONTAINER*)malloc(sizeof(COMMANDCONTAINER) * BUFF_SIZE_TINY);
 	containers_index = 0;
 	containers_size = BUFF_SIZE_TINY;
-	botname = config_get_key(config, "botname", 0);
+	botname = extract_string_from_key(config_get_key(config, "root/connection/botname"));
 	botname_length = strlen(botname);
 	irc_chat_commands_add_command(chatcmd_help, "help", "", false);
 }

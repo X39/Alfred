@@ -1,19 +1,19 @@
 #include "global.h"
 #include "irc.h"
 #include "networking.h"
+#include "string_op.h"
 
 #include <stdlib.h>
 #include <stdio.h>
 #include <malloc.h>
 #include <string.h>
-
-#ifndef WIN32
-#define alloca alloca
-#endif
+#include <time.h>
 
 #define CONST_CALLBACK_INITIAL 10
 #define CONST_CALLBACK_INC 10
 #define CONST_BUFFER_SIZE 256
+#define CONST_ANTIFLOOD_THRESHOLD_BYTES 2048
+#define CONST_ANTIFLOOD_THRESHOLD_TIME 1
 
 //https://tools.ietf.org/html/rfc2812
 
@@ -26,18 +26,11 @@ typedef struct
 	size_t callbacks_raw_next;
 	size_t callbacks_raw_size;
 	SOCKET socket;
+
+	time_t antiflood_last;
+	unsigned long antiflood_out;
 } IRC;
 
-void strrepchr(char* str, char toFind, char toReplace)
-{
-	unsigned int length = strlen(str);
-	unsigned int i;
-	for (i = 0; i < length; i++)
-	{
-		if (str[i] == toFind)
-			str[i] = toReplace;
-	}
-}
 
 int FNC(connect)(const char* ip, const char* port, const char* nick, IRCHANDLE* outHandle)
 {
@@ -79,6 +72,8 @@ int FNC(connect)(const char* ip, const char* port, const char* nick, IRCHANDLE* 
 
 
 	FNC(register_callback_raw)(irc, FNC(handle_commandCallbacks));
+	irc->antiflood_last = time(NULL);
+	irc->antiflood_out = 0;
 
 	return 0;
 }
@@ -148,9 +143,14 @@ int FNC(poll)(IRCHANDLE handle, char* buffer, unsigned int bufferSize)
 		index -= (long)buffer;
 		count++;
 		buffer[(long)index] = '\0';
-		strrepchr(buffer, '\r', ' ');
-
+		str_repchr(buffer, '\r', ' ', (int)index);
+		#ifdef DEBUG
 		printf("[ <--]\t%s\n", buffer);
+		#else
+		if(atoi(strchr(buffer, ' ') + 1) != 372)
+			printf("[ <--]\t%s\n", buffer);
+		#endif
+		fflush(stdout);
 
 		for (i = 0; i < irc->callbacks_raw_next; i++)
 		{
@@ -168,6 +168,17 @@ int FNC(send)(IRCHANDLE handle, const char* buffer, unsigned int bufferSize)
 {
 	IRC* irc = (IRC*)handle;
 	int res;
+	double dtime = difftime(time(NULL), irc->antiflood_last);
+	if (dtime > CONST_ANTIFLOOD_THRESHOLD_TIME)
+	{
+		irc->antiflood_last = time(NULL);
+		irc->antiflood_out = 0;
+	}
+	if (irc->antiflood_out > CONST_ANTIFLOOD_THRESHOLD_BYTES)
+	{
+		Sleep((CONST_ANTIFLOOD_THRESHOLD_TIME - dtime) * 1000);
+	}
+	irc->antiflood_out += bufferSize;
 	printf("[--> ]\t%s", buffer);
 	res = send(irc->socket, buffer, bufferSize, 0);
 	if (res <= 0)
@@ -261,6 +272,10 @@ int FNC(handle_commandCallbacks)(IRCHANDLE handle, const char* msg, unsigned int
 			else if (strstr(type, "JOIN"))
 			{
 				cmd.type = IRC_JOIN;
+			}
+			else if (strstr(type, "KICK"))
+			{
+				cmd.type = IRC_KICK;
 			}
 			else
 			{

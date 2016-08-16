@@ -36,6 +36,9 @@
     <ClCompile Include="string_op.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="irc_user.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="main.h">
@@ -62,9 +65,15 @@
     <ClInclude Include="string_op.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="irc_user.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Text Include="makefile">
+      <Filter>Resource Files</Filter>
+    </Text>
+    <Text Include="foo.txt">
       <Filter>Resource Files</Filter>
     </Text>
   </ItemGroup>

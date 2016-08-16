@@ -6,6 +6,10 @@
 #define BUFF_SIZE_TINY 64
 #define BUFF_INCREASE BUFF_SIZE_TINY
 
+#define CONFIG_PATH "config.xml"
+
+
+
 //#define DEBUG
 
 #ifndef bool
@@ -29,7 +33,9 @@
 
 
 #ifdef WIN32
-#define alloca _malloca
+#ifndef alloca
+	#define alloca _malloca
+#endif
 #else
 #include <unistd.h>
 

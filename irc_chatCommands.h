@@ -13,6 +13,7 @@ void irc_chat_commands_uninit(void);
 void irc_chat_commands_add_command(CHATCOMMAND, const char*, const char*, bool);
 
 
+const char* random_response(const char*);
 const char* random_error_message(void);
 const char* random_unknowncommand_message(void);
 const char* random_notallowed_message(void);

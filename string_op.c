@@ -1,9 +1,11 @@
 #include "global.h"
 #include "string_op.h"
 #include <ctype.h>
+#include <string.h>
 
-#define NULL 0
-
+#ifndef NULL
+	#define NULL 0
+#endif
 unsigned int str_sw(const char* lString, const char* rString)
 {
 	unsigned int i;
@@ -43,7 +45,7 @@ const char* str_strwrd(const char* lString, const char* rString, const char* let
 	bool isSeparated = true;
 
 	if (letters == NULL)
-		letters = " ,-_\t";
+		letters = " ,-_\t.?!+:;<>#";
 	for (i = 0, j = 0;; i++, j++)
 	{
 		lc = lString[i];
@@ -140,4 +142,23 @@ int chr_is(const char c, const char* isArr)
 			return 1;
 	}
 	return 0;
+}
+
+
+unsigned int str_repchr(char* str, char toFind, char toReplace, int length)
+{
+	unsigned int i, j = 0;
+	if (length == -1)
+	{
+		length = strlen(str);
+	}
+	for (i = 0; i < length; i++)
+	{
+		if (str[i] == toFind)
+		{
+			str[i] = toReplace;
+			j++;
+		}
+	}
+	return j;
 }

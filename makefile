@@ -1,5 +1,5 @@
-prog: main.o irc.o networking.o yxml.o config.o irc_chatCommands.o string_op.o
-	gcc -o prog main.o irc.o networking.o yxml.o config.o irc_chatCommands.o string_op.o
+prog: main.o irc.o networking.o yxml.o config.o irc_chatCommands.o string_op.o irc_user.o
+	gcc -o prog main.o irc.o networking.o yxml.o config.o irc_chatCommands.o string_op.o irc_user.o
 
 main.o: main.c
 	gcc -c main.c
@@ -18,6 +18,9 @@ config.o: config.c
 	
 irc_chatCommands.o: irc_chatCommands.c
 	gcc -c irc_chatCommands.c
-
+	
 string_op.o: string_op.c
 	gcc -c string_op.c
+
+irc_user.o: irc_user.c
+	gcc -c irc_user.c
