@@ -360,6 +360,7 @@ int main(int argc, char** argv)
 	irc_chat_commands_add_command(chatcmd_fact, "fact", "", false, false);
 	irc_chat_commands_add_command(chatcmd_save, "save", "", true, true);
 	irc_chat_commands_add_command(chatcmd_authed, "authed", "", false, true);
+	irc_chat_commands_add_command(chatcmd_reload, "reload", "", true, true);
 
 	#ifdef WIN32
 	SetConsoleCtrlHandler(handle_SIGTERM, TRUE);
