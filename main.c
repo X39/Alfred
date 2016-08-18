@@ -276,6 +276,13 @@ bool chatcmd_authed(IRCHANDLE handle, const irc_command* cmd, unsigned int argc,
 	strncpy(buffer, is_auth_user(cmd->sender) > 0 ? "Authorized" : "Non-Authorized", buffer_size);
 	return true;
 }
+bool chatcmd_reload(IRCHANDLE handle, const irc_command* cmd, unsigned int argc, const char** args, char* buffer, unsigned int buffer_size)
+{
+	config_destroy(&config);
+	config = config_create();
+	snprintf(buffer, buffer_size, "Tried to reload config. Result: %d", config_load(config, CONFIG_PATH));
+	return true;
+}
 
 #ifdef WIN32
 BOOL WINAPI handle_SIGTERM(DWORD val)
