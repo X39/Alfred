@@ -3,7 +3,7 @@
 
 #include <time.h>
 
-#define IRC_USER_ANTIFLOOD 1000
+#define IRC_USER_ANTIFLOOD 2
 
 typedef struct
 {

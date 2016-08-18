@@ -1,6 +1,7 @@
 #define IRC_CHATCOMMANDS_PRIVATE
 #include "global.h"
 #include "string_op.h"
+#include "irc_user.h"
 #include "irc_chatCommands.h"
 #include <malloc.h>
 #include <string.h>
@@ -98,14 +99,27 @@ bool chatcmd_help(IRCHANDLE handle, const irc_command* cmd, unsigned int argc, c
 	unsigned int i;
 	unsigned int j;
 	unsigned int len;
+	bool isDirect = cmd->receiver[0] != '#';
+	char* receiver;
+	if (isDirect)
+	{
+		receiver = cmd->receiver;
+	}
+	else
+	{
+		i = (strchr(cmd->sender, '!') - cmd->sender) + 1;
+		receiver = (char*)alloca(sizeof(char) * i);
+		strncpy(receiver, cmd->sender, i);
+		receiver[i - 1] = '\0';
+	}
 
-	len = snprintf(b, b_size, "PRIVMSG %s :*Non-Auth*     ", cmd->receiver);
+	len = snprintf(b, b_size, "PRIVMSG %s :*Non-Auth*     ", receiver);
 	b += len;
 	b_size -= len;
 
 	for (i = 0; i < containers_index; i++)
 	{
-		if (containers[i].requires_auth)
+		if (containers[i].requires_auth || (!isDirect && containers[i].direct_only))
 			continue;
 		len = snprintf(b, b_size, containers[i].args_size ? " - '%s' args: " : " - '%s'", containers[i].name);
 		b += len;
@@ -128,13 +142,13 @@ bool chatcmd_help(IRCHANDLE handle, const irc_command* cmd, unsigned int argc, c
 	}
 
 
-	len = snprintf(b, b_size, "\r\nPRIVMSG %s :*Auth-Required*", cmd->receiver);
+	len = snprintf(b, b_size, "\r\nPRIVMSG %s :*Auth-Required*", receiver);
 	b += len;
 	b_size -= len;
 
 	for (i = 0; i < containers_index; i++)
 	{
-		if (!containers[i].requires_auth)
+		if (!containers[i].requires_auth || (!isDirect && containers[i].direct_only))
 			continue;
 		len = snprintf(b, b_size, containers[i].args_size ? " - '%s' args: " : " - '%s'", containers[i].name);
 		b += len;
@@ -170,100 +184,121 @@ bool irc_chat_handle_chatcommands(IRCHANDLE handle, const irc_command* cmd)
 	const char* content = cmd->content + 1;
 	int flag;
 	const char* spotFound = NULL;
+	char* responsee;
+	bool isDirectMessage;
 	if (cmd->type == IRC_PRIVMSG)
 	{
+		if (str_swi(content, botname))
+			return false;
 		if (cmd->receiver[0] == '#')
 		{
-			if (str_swi(content, botname))
-				return false;
-			content += botname_length;
-			for (i = 0; i < containers_index; i++)
+			responsee = cmd->receiver;
+			isDirectMessage = false;
+		}
+		else
+		{
+			i = (strchr(cmd->sender, '!') - cmd->sender) + 1;
+			responsee = (char*)alloca(sizeof(char) * i);
+			strncpy(responsee, cmd->sender, i);
+			responsee[i - 1] = '\0';
+			isDirectMessage = true;
+		}
+		if (flag = irc_user_check_antiflood(responsee, cmd->sender))
+		{
+			res = random_response("antiflood");
+			i = sizeof("PRIVMSG  :\r") + strlen(responsee) + strlen(res) + 1;
+			buffer = (char*)alloca(sizeof(char) * i);
+			irc_client_send(handle, buffer, snprintf(buffer, i, "PRIVMSG %s :%s\r\n", responsee, res));
+			return true;
+		}
+		content += botname_length;
+		for (i = 0; i < containers_index; i++)
+		{
+			if ((res = str_strwrdi(content, containers[i].name, NULL)))
 			{
-				if ((res = str_strwrdi(content, containers[i].name, NULL)))
+				if (res < spotFound || spotFound == NULL)
 				{
-					if (res < spotFound || spotFound == NULL)
-					{
-						j = i;
-						spotFound = res;
-					}
+					j = i;
+					spotFound = res;
 				}
 			}
-			i = j;
-			if(spotFound != NULL)
+		}
+		i = j;
+		if (spotFound != NULL)
+		{
+			res = spotFound;
+			flag = 0;
+			if (containers[i].requires_auth && !is_auth_user(cmd->sender))
 			{
-				res = spotFound;
-				flag = 0;
-				if (containers[i].requires_auth && !is_auth_user(cmd->sender))
+				res = random_notallowed_message();
+				flag = sizeof("PRIVMSG  :\r") + strlen(res) + strlen(responsee);
+				buffer2 = (char*)alloca(sizeof(char) * flag);
+				snprintf(buffer2, flag, "PRIVMSG %s :%s\r\n", responsee, res);
+				irc_client_send(handle, buffer2, strlen(buffer2));
+				return true;
+			}
+			for (j = 0; j < containers[i].args_size; j++)
+			{
+				res2 = str_strwrdi(res, containers[i].args[j], NULL);
+				if (!res2 && containers[i].args_defaults[j] == NULL)
 				{
-					res = random_notallowed_message();
-					flag = sizeof("PRIVMSG  :\r") + strlen(res) + strlen(cmd->receiver);
-					buffer2 = (char*)alloca(sizeof(char) * flag);
-					snprintf(buffer2, flag, "PRIVMSG %s :%s\r\n", cmd->receiver, res);
-					irc_client_send(handle, buffer2, strlen(buffer2));
-					return true;
+					flag = 1;
+					break;
 				}
-				for (j = 0; j < containers[i].args_size; j++)
+			}
+			if (flag)
+			{
+				res = random_error_message();
+				flag = sizeof("PRIVMSG  :\r") + strlen(responsee) + strlen(res);
+				buffer2 = (char*)alloca(sizeof(char) * flag);
+				snprintf(buffer2, flag, "PRIVMSG %s :%s\r\n", responsee, res);
+				irc_client_send(handle, buffer2, flag);
+				return true;
+			}
+			buffer = (char*)alloca(sizeof(char) * BUFF_SIZE_SMALL);
+			args = (char**)alloca(sizeof(char*) * containers[i].args_size);
+			for (j = 0; j < containers[i].args_size; j++)
+			{
+				res2 = str_strwrdi(res, containers[i].args[j], NULL);
+				if (!res2)
 				{
-					res2 = str_strwrdi(res, containers[i].args[j], NULL);
-					if (!res2 && containers[i].args_defaults[j] == NULL)
+					args[j] = containers[i].args_defaults[j];
+				}
+				else
+				{
+					res = strchr(res2 + 1, ' ');
+					if (res + 1 == '"')
 					{
-						flag = 1;
-						break;
-					}
-				}
-				if (flag)
-				{
-					res = random_error_message();
-					flag = sizeof("PRIVMSG  :\r") + strlen(cmd->receiver) + strlen(res);
-					buffer2 = (char*)alloca(sizeof(char) * flag);
-					snprintf(buffer2, flag, "PRIVMSG %s :%s\r\n", cmd->receiver, res);
-					irc_client_send(handle, buffer2, flag);
-					return true;
-				}
-				buffer = (char*)alloca(sizeof(char) * BUFF_SIZE_SMALL);
-				args = (char**)alloca(sizeof(char*) * containers[i].args_size);
-				for (j = 0; j < containers[i].args_size; j++)
-				{
-					res2 = str_strwrdi(res, containers[i].args[j], NULL);
-					if (!res2)
-					{
-						args[j] = containers[i].args_defaults[j];
+						res++;
+						res2 = strchr(res + 1, '"');
 					}
 					else
 					{
-						res = strchr(res2 + 1, ' ');
-						if (res + 1 == '"')
-						{
-							res++;
-							res2 = strchr(res + 1, '"');
-						}
-						else
-						{
-							res2 = strchr(res + 1, ' ');
-						}
-						if (res2 == NULL)
-							res2 = strlen(res) + res;
-						flag = res2 - res;
-						args[j] = (char*)alloca(sizeof(char) * flag);
-						strncpy(args[j], res + 1, res2 - res);
-						args[j][flag - 1] = '\0';
+						res2 = strchr(res + 1, ' ');
 					}
+					if (res2 == NULL)
+						res2 = strlen(res) + res;
+					flag = res2 - res;
+					args[j] = (char*)alloca(sizeof(char) * flag);
+					strncpy(args[j], res + 1, res2 - res);
+					args[j][flag - 1] = '\0';
 				}
-				if (containers[i].cmd(handle, cmd, containers[i].args_size, args, buffer, BUFF_SIZE_SMALL))
-				{
-					flag = BUFF_SIZE_SMALL + sizeof("PRIVMSG  :\r") + strlen(cmd->receiver);
-					buffer2 = (char*)alloca(sizeof(char) * flag);
-					snprintf(buffer2, flag, "PRIVMSG %s :%s\r\n", cmd->receiver, buffer);
-					irc_client_send(handle, buffer2, strlen(buffer2));
-				}
-				return true;
 			}
-			res = random_unknowncommand_message();
-			flag = sizeof("PRIVMSG  :\r") + strlen(res) + strlen(cmd->receiver);
-			buffer2 = (char*)alloca(sizeof(char) * flag);
-			snprintf(buffer2, flag, "PRIVMSG %s :%s\r\n", cmd->receiver, res);
-			irc_client_send(handle, buffer2, strlen(buffer2));
+			if (containers[i].cmd(handle, cmd, containers[i].args_size, args, buffer, BUFF_SIZE_SMALL))
+			{
+				flag = BUFF_SIZE_SMALL + sizeof("PRIVMSG  :\r") + strlen(responsee);
+				buffer2 = (char*)alloca(sizeof(char) * flag);
+				snprintf(buffer2, flag, "PRIVMSG %s :%s\r\n", responsee, buffer);
+				irc_client_send(handle, buffer2, strlen(buffer2));
+			}
+			return true;
 		}
+		res = random_unknowncommand_message();
+		flag = sizeof("PRIVMSG  :\r") + strlen(res) + strlen(responsee);
+		buffer2 = (char*)alloca(sizeof(char) * flag);
+		snprintf(buffer2, flag, "PRIVMSG %s :%s\r\n", responsee, res);
+		irc_client_send(handle, buffer2, strlen(buffer2));
+
 	}
 	return false;
 }
@@ -275,7 +310,7 @@ void irc_chat_commands_init(CONFIG cfg)
 	containers_size = BUFF_SIZE_TINY;
 	botname = extract_string_from_key(config_get_key(config, "root/connection/botname"));
 	botname_length = strlen(botname);
-	irc_chat_commands_add_command(chatcmd_help, "help", "", false);
+	irc_chat_commands_add_command(chatcmd_help, "help", "", false, false);
 }
 void irc_chat_commands_uninit(void)
 {
@@ -301,7 +336,7 @@ void irc_chat_commands_uninit(void)
 ///
 ///Example:
 ///	foo;bar;foobar=something;
-void irc_chat_commands_add_command(CHATCOMMAND cmd, const char* command, const char* format, bool auth)
+void irc_chat_commands_add_command(CHATCOMMAND cmd, const char* command, const char* format, bool auth, bool direct_only)
 {
 	const char* strstrres;
 	const char* strstrres2;
@@ -319,6 +354,7 @@ void irc_chat_commands_add_command(CHATCOMMAND cmd, const char* command, const c
 	strcpy(containers[containers_index].name, command);
 	containers[containers_index].args_size = 0;
 	containers[containers_index].requires_auth = auth;
+	containers[containers_index].direct_only = direct_only;
 
 	strstrres = strchr(format, ';');
 	strstrres2 = format;

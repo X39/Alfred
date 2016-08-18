@@ -273,7 +273,7 @@ bool chatcmd_fact(IRCHANDLE handle, const irc_command* cmd, unsigned int argc, c
 }
 bool chatcmd_authed(IRCHANDLE handle, const irc_command* cmd, unsigned int argc, const char** args, char* buffer, unsigned int buffer_size)
 {
-	strncpy(buffer, random_response(is_auth_user(cmd->sender) ? "authcheck_true" : "authcheck_false") , buffer_size);
+	strncpy(buffer, is_auth_user(cmd->sender) > 0 ? "Authorized" : "Non-Authorized", buffer_size);
 	return true;
 }
 
@@ -345,14 +345,14 @@ int main(int argc, char** argv)
 	irc_chat_commands_init(config);
 	irc_user_init();
 
-	irc_chat_commands_add_command(chatcmd_roll, "roll", "from=0;to=30000;", false);
-	irc_chat_commands_add_command(chatcmd_join, "join", "channel;perma=f;", true);
-	irc_chat_commands_add_command(chatcmd_leave, "leave", "", true);
-	irc_chat_commands_add_command(chatcmd_save, "save", "", true);
-	irc_chat_commands_add_command(chatcmd_whoareyou, "who are you", "", false);
-	irc_chat_commands_add_command(chatcmd_howareyou, "how are you", "", false);
-	irc_chat_commands_add_command(chatcmd_fact, "fact", "", false);
-	irc_chat_commands_add_command(chatcmd_authed, "authed", "", false);
+	irc_chat_commands_add_command(chatcmd_roll, "roll", "from=0;to=30000;", false, false);
+	irc_chat_commands_add_command(chatcmd_join, "join", "channel;perma=f;", true, false);
+	irc_chat_commands_add_command(chatcmd_leave, "leave", "", true, false);
+	irc_chat_commands_add_command(chatcmd_whoareyou, "who are you", "", false, false);
+	irc_chat_commands_add_command(chatcmd_howareyou, "how are you", "", false, false);
+	irc_chat_commands_add_command(chatcmd_fact, "fact", "", false, false);
+	irc_chat_commands_add_command(chatcmd_save, "save", "", true, true);
+	irc_chat_commands_add_command(chatcmd_authed, "authed", "", false, true);
 
 	#ifdef WIN32
 	SetConsoleCtrlHandler(handle_SIGTERM, TRUE);
