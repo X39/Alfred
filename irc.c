@@ -12,7 +12,7 @@
 #define CONST_CALLBACK_INITIAL 10
 #define CONST_CALLBACK_INC 10
 #define CONST_BUFFER_SIZE 256
-#define CONST_ANTIFLOOD_THRESHOLD_BYTES 2048
+#define CONST_ANTIFLOOD_THRESHOLD_BYTES 1024
 #define CONST_ANTIFLOOD_THRESHOLD_TIME 1
 
 //https://tools.ietf.org/html/rfc2812
@@ -144,13 +144,7 @@ int FNC(poll)(IRCHANDLE handle, char* buffer, unsigned int bufferSize)
 		count++;
 		buffer[(long)index] = '\0';
 		str_repchr(buffer, '\r', ' ', (int)index);
-		#ifdef DEBUG
 		printf("[ <--]\t%s\n", buffer);
-		#else
-		if(atoi(strchr(buffer, ' ') + 1) != 372)
-			printf("[ <--]\t%s\n", buffer);
-		#endif
-		fflush(stdout);
 
 		for (i = 0; i < irc->callbacks_raw_next; i++)
 		{
