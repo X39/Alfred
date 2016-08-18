@@ -277,6 +277,10 @@ int FNC(handle_commandCallbacks)(IRCHANDLE handle, const char* msg, unsigned int
 			{
 				cmd.type = IRC_KICK;
 			}
+			else if (strstr(type, "NICK"))
+			{
+				cmd.type = IRC_NICK;
+			}
 			else
 			{
 				printf("[INFO]\tUnknown type '%s'\n", type);
