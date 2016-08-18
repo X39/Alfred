@@ -186,15 +186,18 @@ int handle_KICK(IRCHANDLE handle, const irc_command* cmd)
 
 bool chatcmd_roll(IRCHANDLE handle, const irc_command* cmd, unsigned int argc, const char** args, char* buffer, unsigned int buffer_size)
 {
-	unsigned int val;
-	val = atoi(args[0]);
-	if (val <= 0)
+	long lowVal, highVal;
+	lowVal = atol(args[0]);
+	highVal = atol(args[1]);
+	if (lowVal == highVal || highVal < 0)
 	{
 		strncpy(buffer, random_error_message(), buffer_size);
 		return true;
 	}
-	val = rand() % val + 1;
-	snprintf(buffer, buffer_size, "%d", val);
+	highVal -= lowVal;
+	highVal = rand() % highVal + 1;
+	highVal += lowVal;
+	snprintf(buffer, buffer_size, "%ld", highVal);
 	serveCount++;
 	return true;
 }
@@ -342,7 +345,7 @@ int main(int argc, char** argv)
 	irc_chat_commands_init(config);
 	irc_user_init();
 
-	irc_chat_commands_add_command(chatcmd_roll, "roll", "limit=32000;", false);
+	irc_chat_commands_add_command(chatcmd_roll, "roll", "from=0;to=30000;", false);
 	irc_chat_commands_add_command(chatcmd_join, "join", "channel;perma=f;", true);
 	irc_chat_commands_add_command(chatcmd_leave, "leave", "", true);
 	irc_chat_commands_add_command(chatcmd_save, "save", "", true);
