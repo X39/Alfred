@@ -101,7 +101,7 @@ bool chatcmd_help(IRCHANDLE handle, const irc_command* cmd, unsigned int argc, c
 	unsigned int len;
 	bool isDirect = cmd->receiver[0] != '#';
 	char* receiver;
-	if (isDirect)
+	if (!isDirect)
 	{
 		receiver = cmd->receiver;
 	}
