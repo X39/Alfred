@@ -131,6 +131,10 @@ int FNC(poll)(IRCHANDLE handle, char* buffer, unsigned int bufferSize)
 	char* index = 0;
 	int count = 0;
 
+	#ifdef DEBUG
+	printf("[DEBU]\tirc_client_poll - Start polling ...\n");
+	#endif
+
 	res = recv(irc->socket, buffer, bufferSize - 2, 0);
 	if (res <= 0)
 	{
@@ -138,6 +142,9 @@ int FNC(poll)(IRCHANDLE handle, char* buffer, unsigned int bufferSize)
 	}
 	buffer[res] = '\0';
 	buffer[res + 1] = '\0';
+	#ifdef DEBUG
+	printf("[DEBU]\tirc_client_poll - Received %d bytes\n", res);
+	#endif
 	while ((index = strchr(buffer, '\n')) != NULL)
 	{
 		index -= (long)buffer;
@@ -145,7 +152,9 @@ int FNC(poll)(IRCHANDLE handle, char* buffer, unsigned int bufferSize)
 		buffer[(long)index] = '\0';
 		str_repchr(buffer, '\r', ' ', (int)(long)index);
 		printf("[ <--]\t%s\n", buffer);
-
+		#ifdef DEBUG
+		printf("[DEBU]\tirc_client_poll - Processing Message ...\n", res);
+		#endif
 		for (i = 0; i < irc->callbacks_raw_next; i++)
 		{
 			cb = irc->callbacks_raw[i];
@@ -156,6 +165,9 @@ int FNC(poll)(IRCHANDLE handle, char* buffer, unsigned int bufferSize)
 		}
 		buffer += (long)index + 1;
 	}
+	#ifdef DEBUG
+	printf("[DEBU]\tirc_client_poll - End polling with %d messages processed\n", count);
+	#endif
 	return count;
 }
 int FNC(send)(IRCHANDLE handle, const char* buffer, unsigned int bufferSize)

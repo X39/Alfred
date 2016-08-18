@@ -103,16 +103,25 @@ bool chatcmd_help(IRCHANDLE handle, const irc_command* cmd, unsigned int argc, c
 	char* receiver;
 	if (!isDirect)
 	{
+		#ifdef DEBUG
+		printf("[DEBU]\tHelp Command - Is channel message\n");
+		#endif
 		receiver = cmd->receiver;
 	}
 	else
 	{
+		#ifdef DEBUG
+		printf("[DEBU]\tHelp Command - Is direct message\n");
+		#endif
 		i = (strchr(cmd->sender, '!') - cmd->sender) + 1;
 		receiver = alloca(sizeof(char) * i);
 		strncpy(receiver, cmd->sender, i);
 		receiver[i - 1] = '\0';
 	}
 
+	#ifdef DEBUG
+	printf("[DEBU]\tHelp Command - Start to build Non-Auth command list\n");
+	#endif
 	len = snprintf(b, b_size, "PRIVMSG %s :*Non-Auth*     ", receiver);
 	b += len;
 	b_size -= len;
@@ -141,7 +150,9 @@ bool chatcmd_help(IRCHANDLE handle, const irc_command* cmd, unsigned int argc, c
 		}
 	}
 
-
+	#ifdef DEBUG
+	printf("[DEBU]\tHelp Command - Start to build Auth-Required command list\n");
+	#endif
 	len = snprintf(b, b_size, "\r\nPRIVMSG %s :*Auth-Required*", receiver);
 	b += len;
 	b_size -= len;
@@ -172,6 +183,9 @@ bool chatcmd_help(IRCHANDLE handle, const irc_command* cmd, unsigned int argc, c
 	snprintf(b, b_size, "\r\n");
 	b -= BUFF_SIZE_LARGE - b_size;
 	irc_client_send(handle, b, strlen(b));
+	#ifdef DEBUG
+	printf("[DEBU]\tHelp Command - Execution finished\n");
+	#endif
 	return false;
 }
 
