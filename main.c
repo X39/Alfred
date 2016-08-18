@@ -268,6 +268,11 @@ bool chatcmd_fact(IRCHANDLE handle, const irc_command* cmd, unsigned int argc, c
 	serveCount++;
 	return true;
 }
+bool chatcmd_authed(IRCHANDLE handle, const irc_command* cmd, unsigned int argc, const char** args, char* buffer, unsigned int buffer_size)
+{
+	strncpy(buffer, random_response(is_auth_user(cmd->sender) ? "authcheck_true" : "authcheck_false") , buffer_size);
+	return true;
+}
 
 #ifdef WIN32
 BOOL WINAPI handle_SIGTERM(DWORD val)
@@ -344,6 +349,7 @@ int main(int argc, char** argv)
 	irc_chat_commands_add_command(chatcmd_whoareyou, "who are you", "", false);
 	irc_chat_commands_add_command(chatcmd_howareyou, "how are you", "", false);
 	irc_chat_commands_add_command(chatcmd_fact, "fact", "", false);
+	irc_chat_commands_add_command(chatcmd_authed, "authed", "", false);
 
 	#ifdef WIN32
 	SetConsoleCtrlHandler(handle_SIGTERM, TRUE);
