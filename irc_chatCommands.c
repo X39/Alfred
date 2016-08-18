@@ -29,7 +29,7 @@ const char* random_response(const char* kind)
 		child = config_key_get_children(responses)[i];
 		for (j = 0; j < config_key_get_size(child); j++)
 		{
-			child2 = config_key_get_children(child)[i];
+			child2 = config_key_get_children(child)[j];
 			switch (config_key_get_type(child2))
 			{
 				case DATATYPE_ARG:
@@ -49,7 +49,7 @@ const char* random_response(const char* kind)
 		child = config_key_get_children(responses)[i];
 		for (j = 0; j < config_key_get_size(child); j++)
 		{
-			child2 = config_key_get_children(child)[i];
+			child2 = config_key_get_children(child)[j];
 			switch (config_key_get_type(child2))
 			{
 				case DATATYPE_ARG:
