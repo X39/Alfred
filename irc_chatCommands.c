@@ -108,7 +108,7 @@ bool chatcmd_help(IRCHANDLE handle, const irc_command* cmd, unsigned int argc, c
 	else
 	{
 		i = (strchr(cmd->sender, '!') - cmd->sender) + 1;
-		receiver = (char*)alloca(sizeof(char) * i);
+		receiver = alloca(sizeof(char) * i);
 		strncpy(receiver, cmd->sender, i);
 		receiver[i - 1] = '\0';
 	}
@@ -198,7 +198,7 @@ bool irc_chat_handle_chatcommands(IRCHANDLE handle, const irc_command* cmd)
 		else
 		{
 			i = (strchr(cmd->sender, '!') - cmd->sender) + 1;
-			responsee = (char*)alloca(sizeof(char) * i);
+			responsee = alloca(sizeof(char) * i);
 			strncpy(responsee, cmd->sender, i);
 			responsee[i - 1] = '\0';
 			isDirectMessage = true;
@@ -207,7 +207,7 @@ bool irc_chat_handle_chatcommands(IRCHANDLE handle, const irc_command* cmd)
 		{
 			res = random_response("antiflood");
 			i = sizeof("PRIVMSG  :\r") + strlen(responsee) + strlen(res) + 1;
-			buffer = (char*)alloca(sizeof(char) * i);
+			buffer = alloca(sizeof(char) * i);
 			irc_client_send(handle, buffer, snprintf(buffer, i, "PRIVMSG %s :%s\r\n", responsee, res));
 			return true;
 		}
@@ -232,7 +232,7 @@ bool irc_chat_handle_chatcommands(IRCHANDLE handle, const irc_command* cmd)
 			{
 				res = random_notallowed_message();
 				flag = sizeof("PRIVMSG  :\r") + strlen(res) + strlen(responsee);
-				buffer2 = (char*)alloca(sizeof(char) * flag);
+				buffer2 = alloca(sizeof(char) * flag);
 				snprintf(buffer2, flag, "PRIVMSG %s :%s\r\n", responsee, res);
 				irc_client_send(handle, buffer2, strlen(buffer2));
 				return true;
@@ -250,13 +250,13 @@ bool irc_chat_handle_chatcommands(IRCHANDLE handle, const irc_command* cmd)
 			{
 				res = random_error_message();
 				flag = sizeof("PRIVMSG  :\r") + strlen(responsee) + strlen(res);
-				buffer2 = (char*)alloca(sizeof(char) * flag);
+				buffer2 = alloca(sizeof(char) * flag);
 				snprintf(buffer2, flag, "PRIVMSG %s :%s\r\n", responsee, res);
 				irc_client_send(handle, buffer2, flag);
 				return true;
 			}
-			buffer = (char*)alloca(sizeof(char) * BUFF_SIZE_SMALL);
-			args = (char**)alloca(sizeof(char*) * containers[i].args_size);
+			buffer = alloca(sizeof(char) * BUFF_SIZE_SMALL);
+			args = alloca(sizeof(char*) * containers[i].args_size);
 			for (j = 0; j < containers[i].args_size; j++)
 			{
 				res2 = str_strwrdi(res, containers[i].args[j], NULL);
@@ -267,7 +267,7 @@ bool irc_chat_handle_chatcommands(IRCHANDLE handle, const irc_command* cmd)
 				else
 				{
 					res = strchr(res2 + 1, ' ');
-					if (res + 1 == '"')
+					if (res[1] == '"')
 					{
 						res++;
 						res2 = strchr(res + 1, '"');
@@ -279,15 +279,15 @@ bool irc_chat_handle_chatcommands(IRCHANDLE handle, const irc_command* cmd)
 					if (res2 == NULL)
 						res2 = strlen(res) + res;
 					flag = res2 - res;
-					args[j] = (char*)alloca(sizeof(char) * flag);
+					args[j] = alloca(sizeof(char) * flag);
 					strncpy(args[j], res + 1, res2 - res);
 					args[j][flag - 1] = '\0';
 				}
 			}
-			if (containers[i].cmd(handle, cmd, containers[i].args_size, args, buffer, BUFF_SIZE_SMALL))
+			if (containers[i].cmd(handle, cmd, containers[i].args_size, (const char**)args, buffer, BUFF_SIZE_SMALL))
 			{
 				flag = BUFF_SIZE_SMALL + sizeof("PRIVMSG  :\r") + strlen(responsee);
-				buffer2 = (char*)alloca(sizeof(char) * flag);
+				buffer2 = alloca(sizeof(char) * flag);
 				snprintf(buffer2, flag, "PRIVMSG %s :%s\r\n", responsee, buffer);
 				irc_client_send(handle, buffer2, strlen(buffer2));
 			}
@@ -295,7 +295,7 @@ bool irc_chat_handle_chatcommands(IRCHANDLE handle, const irc_command* cmd)
 		}
 		res = random_unknowncommand_message();
 		flag = sizeof("PRIVMSG  :\r") + strlen(res) + strlen(responsee);
-		buffer2 = (char*)alloca(sizeof(char) * flag);
+		buffer2 = alloca(sizeof(char) * flag);
 		snprintf(buffer2, flag, "PRIVMSG %s :%s\r\n", responsee, res);
 		irc_client_send(handle, buffer2, strlen(buffer2));
 

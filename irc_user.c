@@ -4,6 +4,7 @@
 #include <malloc.h>
 #include <string.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 CHANNEL** channels;
 unsigned int channels_size;

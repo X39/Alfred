@@ -143,7 +143,7 @@ int FNC(poll)(IRCHANDLE handle, char* buffer, unsigned int bufferSize)
 		index -= (long)buffer;
 		count++;
 		buffer[(long)index] = '\0';
-		str_repchr(buffer, '\r', ' ', (int)index);
+		str_repchr(buffer, '\r', ' ', (int)(long)index);
 		printf("[ <--]\t%s\n", buffer);
 
 		for (i = 0; i < irc->callbacks_raw_next; i++)
