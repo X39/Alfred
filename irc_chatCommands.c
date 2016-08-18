@@ -43,7 +43,7 @@ const char* random_response(const char* kind)
 	}
 	if(k == 0)
 		return "NO MESSAGE SET";
-	k = rand() % k;
+	k = rand() % k + 1;
 	for (i = 0; i < responses_size; i++)
 	{
 		child = config_key_get_children(responses)[i];
