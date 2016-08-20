@@ -292,7 +292,10 @@ BOOL WINAPI handle_SIGTERM(DWORD val)
 	{
 		irc_client_send(handle, "QUIT :SIGTERM ... sorry .. must go :/\r\n", sizeof("QUIT :SIGTERM ... sorry .. must go :/\r\n"));
 		irc_client_close(&handle);
+		irc_user_uninit();
 		irc_chat_commands_uninit();
+		config_save(config, CONFIG_PATH);
+		config_destroy(config);
 		if (err = socket_cleanup())
 		{
 			printf("[ERRO]\tsocket Init failed with error code %d\n", err);
@@ -308,7 +311,10 @@ void handle_SIGINT(int val)
 	int err;
 	irc_client_send(handle, "QUIT :My Master has callen me\r\n", sizeof("QUIT :My Master has callen me\r\n"));
 	irc_client_close(&handle);
+	irc_user_uninit();
 	irc_chat_commands_uninit();
+	config_save(config, CONFIG_PATH);
+	config_destroy(config);
 	if (err = socket_cleanup())
 	{
 		printf("[ERRO]\tsocket Init failed with error code %d\n", err);
@@ -403,6 +409,10 @@ int main(int argc, char** argv)
 		}
 	}
 	irc_client_close(&handle);
+	irc_user_uninit();
+	irc_chat_commands_uninit();
+	config_save(config, CONFIG_PATH);
+	config_destroy(config);
 
 	if (err = socket_cleanup())
 	{
