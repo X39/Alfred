@@ -220,6 +220,13 @@ bool irc_chat_handle_chatcommands(IRCHANDLE handle, const irc_command* cmd)
 		if (flag = irc_user_check_antiflood(responsee, cmd->sender))
 		{
 			res = random_response("antiflood");
+			if (!isDirectMessage)
+			{
+				i = (strchr(cmd->sender, '!') - cmd->sender) + 1;
+				responsee = alloca(sizeof(char) * i);
+				strncpy(responsee, cmd->sender, i);
+				responsee[i - 1] = '\0';
+			}
 			i = sizeof("PRIVMSG  :\r") + strlen(responsee) + strlen(res) + 1;
 			buffer = alloca(sizeof(char) * i);
 			irc_client_send(handle, buffer, snprintf(buffer, i, "PRIVMSG %s :%s\r\n", responsee, res));

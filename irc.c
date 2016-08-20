@@ -212,7 +212,8 @@ int FNC(handle_ping)(IRCHANDLE handle, const char* msg, unsigned int msgLen)
 }
 int FNC(handle_commandCallbacks)(IRCHANDLE handle, const char* msg, unsigned int msgLen)
 {
-	int index;
+	long index;
+	const char* result;
 	char* type;
 	irc_command cmd;
 	IRC* irc = (IRC*)handle;
@@ -221,13 +222,19 @@ int FNC(handle_commandCallbacks)(IRCHANDLE handle, const char* msg, unsigned int
 	if (msg[0] == ':')
 	{
 		msg++;
-		index = strchr(msg, ' ') - msg;
+		result = strchr(msg, ' ');
+		if (result == NULL)
+			return 0;
+		index = result - msg;
 		cmd.sender = alloca(sizeof(char) * index + 1);
 		cmd.sender[index] = '\0';
 		memcpy(cmd.sender, msg, index);
 
 		msg += index + 1;
-		index = strchr(msg, ' ') - msg;
+		result = strchr(msg, ' ');
+		if (result == NULL)
+			return 0;
+		index = result - msg;
 		type = alloca(sizeof(char) * index + 1);
 		type[index] = '\0';
 		memcpy(type, msg, index);

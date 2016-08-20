@@ -208,12 +208,12 @@ bool chatcmd_join(IRCHANDLE handle, const irc_command* cmd, unsigned int argc, c
 	irc_client_send(handle, buffer, strlen(buffer));
 	if (args[1][0] == 't')
 	{
-		if (!channellist_contains(cmd->content))
+		if (!channellist_contains(args[0]))
 		{
 			key = config_key_create_child(config_get_or_create_key(config, "root/channels"));
 			config_key_set_name(key, "channel");
 			key = config_key_create_child(key);
-			config_key_set_string(key, cmd->content);
+			config_key_set_string(key, args[0]);
 		}
 		snprintf(buffer, buffer_size, "You can always find me there from now on Master!");
 	}
