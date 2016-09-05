@@ -127,9 +127,9 @@ int FNC(load)(CONFIG c, const char* path)
 				break;
 
 				case YXML_ELEMEND:
-				buffer[bufferIndex] = '\0';
 				if (bufferIndex > 0 && !lastWasEnd)
 				{
+					buffer[bufferIndex] = '\0';
 					d2 = FNC(key_create_child)(d);
 					FNC(key_set_string)(d2, buffer);
 				}
@@ -138,8 +138,11 @@ int FNC(load)(CONFIG c, const char* path)
 				break;
 
 				case YXML_CONTENT:
-				buffer[bufferIndex] = yxml.data[0];
-				bufferIndex++;
+				if (bufferIndex != 0 || !chr_is(*yxml.data, "\n\r\t "))
+				{
+					buffer[bufferIndex] = yxml.data[0];
+					bufferIndex++;
+				}
 				break;
 
 				case YXML_ATTRSTART:

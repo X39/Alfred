@@ -13,12 +13,18 @@
 #include <signal.h>
 #include <string.h>
 #include <time.h>
+#ifndef _WIN32
+#include <execinfo.h>
+#endif
+
+
 
 
 IRCHANDLE handle;
 CONFIG config;
 time_t startTime;
 unsigned long serveCount = 0;
+
 
 /* Returns the node key that contains the string key of given channel or NULL if nothing was found. */
 KEY channellist_contains(const char* channel)
@@ -83,13 +89,13 @@ int handle_ENDOFMOTD(IRCHANDLE handle, const irc_command* cmd)
 		key = config_get_key(config, "root/init");
 		if (key != NULL)
 		{
-			for (i = 0; (child = config_key_get_children(key)[i]) != NULL && i < config_key_get_size(key); i++)
+			for (i = 0; i < config_key_get_size(key) && (child = config_key_get_children(key)[i]) != NULL; i++)
 			{
-				if (strcmpi(config_key_get_name(child), "action"))
+				if (config_key_get_type(child) != DATATYPE_NODE || strcmpi(config_key_get_name(child), "action"))
 					continue;
 				value = NULL;
 				action = NULL;
-				for (j = 0; (child2 = config_key_get_children(child)[j]) != NULL && j < config_key_get_size(child); j++)
+				for (j = 0;  j < config_key_get_size(child) && (child2 = config_key_get_children(child)[j]) != NULL; j++)
 				{
 					switch (config_key_get_type(child2))
 					{
@@ -125,20 +131,19 @@ int handle_ENDOFMOTD(IRCHANDLE handle, const irc_command* cmd)
 		key = config_get_key(config, "root/channels");
 		if (key != NULL)
 		{
-			for (i = 0; (child = config_key_get_children(key)[i]) != NULL && i < config_key_get_size(key); i++)
+			for (i = 0; i < config_key_get_size(key) && (child = config_key_get_children(key)[i]) != NULL; i++)
 			{
-				if (!strcmpi(config_key_get_name(child), "channel"))
+				if (config_key_get_type(child) != DATATYPE_NODE || strcmpi(config_key_get_name(child), "channel"))
+					continue;
+				for (j = 0; j < config_key_get_size(child) && (child2 = config_key_get_children(child)[j]) != NULL; j++)
 				{
-					for (j = 0; (child2 = config_key_get_children(child)[j]) != NULL && j < config_key_get_size(child); j++)
+					switch (config_key_get_type(child2))
 					{
-						switch (config_key_get_type(child2))
-						{
-							case DATATYPE_STRING:
-							snprintf(buffer, BUFF_SIZE_MEDIUM, "JOIN %s\r\n", config_key_get_string(child2));
-							irc_client_send(handle, buffer, strlen(buffer));
-							irc_client_poll(handle, buffer, BUFF_SIZE_MEDIUM);
-							break;
-						}
+						case DATATYPE_STRING:
+						snprintf(buffer, BUFF_SIZE_MEDIUM, "JOIN %s\r\n", config_key_get_string(child2));
+						irc_client_send(handle, buffer, strlen(buffer));
+						irc_client_poll(handle, buffer, BUFF_SIZE_MEDIUM);
+						break;
 					}
 				}
 			}
@@ -322,6 +327,15 @@ void handle_SIGINT(int val)
 	}
 	exit(0);
 }
+void handle_SIGSEGV(int val)
+{
+	void *array[20];
+	size_t size;
+	size = backtrace(array, 20);
+	fprintf(stderr, "Error: signal %d:\n", sig);
+	backtrace_symbols_fd(array, size, STDERR_FILENO);
+	exit(1);
+}
 #endif
 
 bool validate_config_requirements(void)
@@ -340,12 +354,21 @@ int main(int argc, char** argv)
 {
 	int err;
 	char buffer[BUFF_SIZE_LARGE];
-	config = config_create();
-	#ifndef WIN32
-	struct sigaction action;
+	#ifdef _WIN32
+	SetConsoleCtrlHandler(handle_SIGTERM, TRUE);
+	#else
+	struct sigaction action_SIGINT, handle_SIGSEGV;
+
+	memset(&action_SIGINT, 0, sizeof(struct sigaction));
+	action_SIGINT.sa_handler = handle_SIGINT;
+	sigaction(SIGINT, &action_SIGINT, NULL);
+
+	memset(&handle_SIGSEGV, 0, sizeof(struct sigaction));
+	handle_SIGSEGV.sa_handler = handle_SIGSEGV;
+	sigaction(SIGSEGV, &handle_SIGSEGV, NULL);
 	#endif
 	
-	
+	config = config_create();	
 	srand((unsigned int)time(NULL));
 	startTime = time(NULL);
 	config_load(config, CONFIG_PATH);
@@ -359,22 +382,17 @@ int main(int argc, char** argv)
 	irc_user_init();
 
 	irc_chat_commands_add_command(chatcmd_roll, "roll", "from=0;to=30000;", false, false);
-	irc_chat_commands_add_command(chatcmd_join, "join", "channel;perma=f;", true, false);
-	irc_chat_commands_add_command(chatcmd_leave, "leave", "", true, false);
 	irc_chat_commands_add_command(chatcmd_whoareyou, "who are you", "", false, false);
 	irc_chat_commands_add_command(chatcmd_howareyou, "how are you", "", false, false);
 	irc_chat_commands_add_command(chatcmd_fact, "fact", "", false, false);
-	irc_chat_commands_add_command(chatcmd_save, "save", "", true, true);
 	irc_chat_commands_add_command(chatcmd_authed, "authed", "", false, true);
-	irc_chat_commands_add_command(chatcmd_reload, "reload", "", true, true);
+	irc_chat_commands_add_command(NULL, "hangman", "(start);[try];", false, true);
 
-	#ifdef WIN32
-	SetConsoleCtrlHandler(handle_SIGTERM, TRUE);
-	#else
-	memset(&action, 0, sizeof(struct sigaction));
-	action.sa_handler = handle_SIGINT;
-	sigaction(SIGINT, &action, NULL);
-	#endif
+	irc_chat_commands_add_command(chatcmd_save, "save", "", true, true);
+	irc_chat_commands_add_command(chatcmd_reload, "reload", "", true, true);
+	irc_chat_commands_add_command(chatcmd_join, "join", "channel;perma=f;", true, false);
+	irc_chat_commands_add_command(chatcmd_leave, "leave", "", true, false);
+
 
 	if (err = socket_init())
 	{

@@ -9,12 +9,17 @@ typedef struct
 {
 	char* username;
 	time_t last_request;
+	char **var_names;
+	char **var_values;
+	unsigned int var_head;
+	unsigned int var_size;
 } USER;
 
 typedef struct
 {
 	char* channel_name;
 	USER** users;
+	unsigned int users_last;
 	unsigned int users_size;
 } CHANNEL;
 
@@ -38,3 +43,6 @@ const USER* irc_user_get_user(const char*, const char*);
 void irc_user_free_user(USER**);
 void irc_user_free_channel(CHANNEL**);
 void irc_user_uninit(void);
+
+void irc_user_set_variable(USER*, const char*, const char*);
+const char* irc_user_get_variable(USER*, const char*);

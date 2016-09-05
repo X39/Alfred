@@ -149,34 +149,36 @@ bool chatcmd_help(IRCHANDLE handle, const irc_command* cmd, unsigned int argc, c
 			}
 		}
 	}
-
-	#ifdef DEBUG
-	printf("[DEBU]\tHelp Command - Start to build Auth-Required command list\n");
-	#endif
-	len = snprintf(b, b_size, "\r\nPRIVMSG %s :*Auth-Required*", receiver);
-	b += len;
-	b_size -= len;
-
-	for (i = 0; i < containers_index; i++)
+	if (is_auth_user(cmd->sender))
 	{
-		if (!containers[i].requires_auth || (!isDirect && containers[i].direct_only))
-			continue;
-		len = snprintf(b, b_size, containers[i].args_size ? " - '%s' args: " : " - '%s'", containers[i].name);
+		#ifdef DEBUG
+		printf("[DEBU]\tHelp Command - Start to build Auth-Required command list\n");
+		#endif
+		len = snprintf(b, b_size, "\r\nPRIVMSG %s :*Auth-Required*", receiver);
 		b += len;
 		b_size -= len;
-		for (j = 0; j < containers[i].args_size; j++)
+
+		for (i = 0; i < containers_index; i++)
 		{
-			if (containers[i].args_defaults[j] != NULL)
+			if (!containers[i].requires_auth || (!isDirect && containers[i].direct_only))
+				continue;
+			len = snprintf(b, b_size, containers[i].args_size ? " - '%s' args: " : " - '%s'", containers[i].name);
+			b += len;
+			b_size -= len;
+			for (j = 0; j < containers[i].args_size; j++)
 			{
-				len = snprintf(b, b_size, j ? ", '%s' (%s)" : "'%s' (%s)", containers[i].args[j], containers[i].args_defaults[j]);
-				b += len;
-				b_size -= len;
-			}
-			else
-			{
-				len = snprintf(b, b_size, j ? ", '%s'" : "'%s'", containers[i].args[j]);
-				b += len;
-				b_size -= len;
+				if (containers[i].args_defaults[j] != NULL)
+				{
+					len = snprintf(b, b_size, j ? ", '%s' (%s)" : "'%s' (%s)", containers[i].args[j], containers[i].args_defaults[j]);
+					b += len;
+					b_size -= len;
+				}
+				else
+				{
+					len = snprintf(b, b_size, j ? ", '%s'" : "'%s'", containers[i].args[j]);
+					b += len;
+					b_size -= len;
+				}
 			}
 		}
 	}
@@ -400,9 +402,8 @@ void irc_chat_commands_add_command(CHATCOMMAND cmd, const char* command, const c
 	strstrres2 = format;
 	do
 	{
-		strncpy(tmp, strstrres2, strstrres - format);
-		strstrres2 = strstrres + 1;
-		tmp[strstrres - format] = '\0';
+		strncpy(tmp, strstrres2, strstrres - strstrres2);
+		tmp[strstrres - strstrres2] = '\0';
 
 		if ((strstrres3 = strchr(tmp, '=')))
 		{
@@ -412,9 +413,9 @@ void irc_chat_commands_add_command(CHATCOMMAND cmd, const char* command, const c
 			containers[containers_index].args[args_index][size - 1] = '\0';
 
 			size = strlen(strstrres3 + 1);
-			containers[containers_index].args_defaults[args_index] = (char*)malloc(sizeof(char) * size);
+			containers[containers_index].args_defaults[args_index] = (char*)malloc(sizeof(char) * (size + 1));
 			strcpy(containers[containers_index].args_defaults[args_index], strstrres3 + 1);
-			containers[containers_index].args_defaults[args_index][size - 1] = '\0';
+			containers[containers_index].args_defaults[args_index][size] = '\0';
 			args_index++;
 		}
 		else
@@ -425,6 +426,7 @@ void irc_chat_commands_add_command(CHATCOMMAND cmd, const char* command, const c
 			containers[containers_index].args_defaults[args_index] = NULL;
 			args_index++;
 		}
+		strstrres2 = strstrres + 1;
 	}
 	while ((strstrres = strchr(strstrres + 1, ';')));
 	containers_index++;

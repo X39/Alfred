@@ -9,7 +9,6 @@
 #define CONFIG_PATH "config.xml"
 
 
-
 //#define DEBUG
 
 #ifndef bool
