@@ -51,7 +51,14 @@ int lh_registerraw(lua_State *L)
 }
 int lh_registermsg(lua_State *L)
 {
-
+	long ref = luaL_ref(L, LUA_REGISTRYINDEX);
+	const char* name = luaL_checkstring(L, 1);
+	const char* format = luaL_checkstring(L, 2);
+	int reqAuth = luaL_checkinteger(L, 3);
+	int reqDirect = luaL_checkinteger(L, 4);
+	if (name == NULL || format == NULL)
+		return;
+	irc_chat_commands_add_command(lh_registermsg_callback, name, format, reqAuth, reqDirect, ref);
 }
 bool lh_registermsg_callback(IRCHANDLE handle, const irc_command* cmd, unsigned int argc, const char** args, char* buffer, unsigned int buffer_size, long cmdArg)
 {
