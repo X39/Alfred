@@ -10,7 +10,7 @@
 
 
 CONFIG config;
-const char* botname;
+char* botname;
 unsigned int botname_length;
 COMMANDCONTAINER* containers;
 unsigned int containers_index;
@@ -92,7 +92,7 @@ bool is_auth_user(const char* user)
 	return false;
 }
 
-bool chatcmd_help(IRCHANDLE handle, const irc_command* cmd, unsigned int argc, const char** args, char* buffer, unsigned int buffer_size)
+bool chatcmd_help(IRCHANDLE handle, const irc_command* cmd, unsigned int argc, const char** args, char* buffer, unsigned int buffer_size, long cmdArg)
 {
 	char* b = (char*)alloca(sizeof(char) * BUFF_SIZE_LARGE);
 	unsigned int b_size = BUFF_SIZE_LARGE;
@@ -307,7 +307,7 @@ bool irc_chat_handle_chatcommands(IRCHANDLE handle, const irc_command* cmd)
 					args[j][flag - 1] = '\0';
 				}
 			}
-			if (containers[i].cmd(handle, cmd, containers[i].args_size, (const char**)args, buffer, BUFF_SIZE_SMALL))
+			if (containers[i].cmd(handle, cmd, containers[i].args_size, (const char**)args, buffer, BUFF_SIZE_SMALL, containers[i].cmdArg))
 			{
 				flag = BUFF_SIZE_SMALL + sizeof("PRIVMSG  :\r") + strlen(responsee);
 				buffer2 = alloca(sizeof(char) * flag);
@@ -327,13 +327,16 @@ bool irc_chat_handle_chatcommands(IRCHANDLE handle, const irc_command* cmd)
 }
 void irc_chat_commands_init(CONFIG cfg)
 {
+	const char* botname_const;
 	config = cfg;
 	containers = (COMMANDCONTAINER*)malloc(sizeof(COMMANDCONTAINER) * BUFF_SIZE_TINY);
 	containers_index = 0;
 	containers_size = BUFF_SIZE_TINY;
-	botname = extract_string_from_key(config_get_key(config, "root/connection/botname"));
-	botname_length = strlen(botname);
-	irc_chat_commands_add_command(chatcmd_help, "help", "", false, false);
+	botname_const = extract_string_from_key(config_get_key(config, "root/connection/bottrigger"));
+	botname_length = strlen(botname_const);
+	botname = malloc(sizeof(char) * botname_length + 1);
+	strcpy(botname, botname_const);
+	irc_chat_commands_add_command(chatcmd_help, "help", "", false, false, 0);
 }
 void irc_chat_commands_uninit(void)
 {
@@ -350,6 +353,9 @@ void irc_chat_commands_uninit(void)
 			free(containers[i].args);
 	}
 	free(containers);
+	botname_length = 0;
+	free(botname);
+	botname = NULL;
 }
 
 
@@ -359,7 +365,7 @@ void irc_chat_commands_uninit(void)
 ///
 ///Example:
 ///	foo;bar;foobar=something;
-void irc_chat_commands_add_command(CHATCOMMAND cmd, const char* command, const char* format, bool auth, bool direct_only)
+void irc_chat_commands_add_command(CHATCOMMAND cmd, const char* command, const char* format, bool auth, bool direct_only, long cmdArg)
 {
 	const char* strstrres;
 	const char* strstrres2;
@@ -378,6 +384,7 @@ void irc_chat_commands_add_command(CHATCOMMAND cmd, const char* command, const c
 	containers[containers_index].args_size = 0;
 	containers[containers_index].requires_auth = auth;
 	containers[containers_index].direct_only = direct_only;
+	containers[containers_index].cmdArg = cmdArg;
 
 	strstrres = strchr(format, ';');
 	strstrres2 = format;

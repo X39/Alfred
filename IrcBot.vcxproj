@@ -154,6 +154,7 @@
     <Text Include="makefile">
       <FileType>CppCode</FileType>
     </Text>
+    <ClCompile Include="mylua.c" />
     <ClCompile Include="networking.c" />
     <ClCompile Include="string_op.c" />
     <ClCompile Include="yxml.c" />
@@ -165,7 +166,13 @@
     <ClInclude Include="irc.h" />
     <ClInclude Include="irc_user.h" />
     <ClInclude Include="irc_chatCommands.h" />
+    <ClInclude Include="lua\include\lauxlib.h" />
+    <ClInclude Include="lua\include\lua.h" />
+    <ClInclude Include="lua\include\lua.hpp" />
+    <ClInclude Include="lua\include\luaconf.h" />
+    <ClInclude Include="lua\include\lualib.h" />
     <ClInclude Include="main.h" />
+    <ClInclude Include="mylua.h" />
     <ClInclude Include="networking.h" />
     <ClInclude Include="string_op.h" />
     <ClInclude Include="yxml.h" />
