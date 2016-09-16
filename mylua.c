@@ -4,6 +4,7 @@
 #include "lua/include/lauxlib.h"
 #include "lua/include/lualib.h"
 #include "irc_chatCommands.h"
+#include "irc_user.h"
 #include "string_op.h"
 
 #include <malloc.h>
@@ -172,7 +173,6 @@ int lh_sendprivmsg(lua_State *L)
 
 	return 0;
 }
-
 int lh_respond(lua_State *L)
 {
 	const char *msg = luaL_checklstring(L, 1, NULL);
@@ -203,6 +203,34 @@ int lh_getRandomResponse(lua_State *L)
 	lua_pushstring(L, random_response(kind));
 	return 1;
 }
+int lh_setChannelVar(lua_State *L)
+{
+	const char *channel = luaL_checklstring(L, 1, NULL);
+	const char *namespace = luaL_checklstring(L, 2, NULL);
+	const char *variable = luaL_checklstring(L, 3, NULL);
+	const char *value = luaL_checklstring(L, 4, NULL);
+	USER* user = irc_user_get_user(channel, namespace);
+	irc_user_set_variable(user, variable, value);
+	return 0;
+}
+int lh_getChannelVar(lua_State *L)
+{
+	const char *channel = luaL_checklstring(L, 1, NULL);
+	const char *namespace = luaL_checklstring(L, 2, NULL);
+	const char *variable = luaL_checklstring(L, 3, NULL);
+	const char *result;
+	USER* user = irc_user_get_user(channel, namespace);
+	result = irc_user_get_variable(user, variable);
+	if (result == NULL)
+	{
+		lua_pushnil(L);
+	}
+	else
+	{
+		lua_pushstring(L, result);
+	}
+	return 1;
+}
 int luaopen_alfred_functions_inner(lua_State *L)
 {
 	static const struct luaL_Reg alfredlib[] = {
@@ -213,6 +241,8 @@ int luaopen_alfred_functions_inner(lua_State *L)
 		{ "sendprivmsg", lh_sendprivmsg },				//alfred.sendprivmsg(message, receiver)
 		{ "respond", lh_respond },						//alfred.respond(message, receiver, sender)
 		{ "getRandomResponse", lh_getRandomResponse },	//alfred.getRandomResponse(responseType)
+		{ "setChannelVar", lh_setChannelVar },			//alfred.lh_setChannelVar(channel, namespace, variable, value)
+		{ "getChannelVar", lh_getChannelVar },			//alfred.lh_getChannelVar(channel, namespace, variable)
 		{ NULL, NULL }
 	};
 	luaL_newlib(L, alfredlib);
