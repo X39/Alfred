@@ -1,16 +1,17 @@
 #pragma once
+#include "global.h"
 #include "irc.h"
 #include "config.h"
 
 
-typedef bool(*CHATCOMMAND)(IRCHANDLE, const irc_command*, unsigned int, const char**, char*, unsigned int);
+typedef bool(*CHATCOMMAND)(IRCHANDLE, const irc_command*, unsigned int, const char**, char*, unsigned int, long);
 
 
 bool irc_chat_handle_chatcommands(IRCHANDLE, const irc_command*);
 void irc_chat_commands_init(CONFIG);
 void irc_chat_commands_uninit(void);
 
-void irc_chat_commands_add_command(CHATCOMMAND, const char*, const char*, bool, bool);
+void irc_chat_commands_add_command(CHATCOMMAND, const char*, const char*, bool, bool, long);
 
 
 const char* random_response(const char*);
@@ -29,5 +30,9 @@ typedef struct
 	unsigned int args_size;
 	bool requires_auth;
 	bool direct_only;
+	long cmdArg;
 }COMMANDCONTAINER;
+COMMANDCONTAINER* containers;
+unsigned int containers_index;
+unsigned int containers_size;
 #endif

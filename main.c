@@ -6,6 +6,10 @@
 #include "irc_chatCommands.h"
 #include "string_op.h"
 #include "irc_user.h"
+#include "mylua.h"
+#include "lua/include/lua.h"
+#include "lua/include/lauxlib.h"
+#include "lua/include/lualib.h"
 
 #include <stdio.h>
 #include <malloc.h>
@@ -13,7 +17,9 @@
 #include <signal.h>
 #include <string.h>
 #include <time.h>
-#ifndef _WIN32
+#ifdef WIN32
+#pragma comment(lib, "lua\\lua53")
+#else
 #include <execinfo.h>
 #endif
 
@@ -189,24 +195,7 @@ int handle_KICK(IRCHANDLE handle, const irc_command* cmd)
 	return false;
 }
 
-bool chatcmd_roll(IRCHANDLE handle, const irc_command* cmd, unsigned int argc, const char** args, char* buffer, unsigned int buffer_size)
-{
-	long lowVal, highVal;
-	lowVal = atol(args[0]);
-	highVal = atol(args[1]);
-	if (lowVal == highVal || highVal < 0)
-	{
-		strncpy(buffer, random_error_message(), buffer_size);
-		return true;
-	}
-	highVal -= lowVal;
-	highVal = rand() % highVal + 1;
-	highVal += lowVal;
-	snprintf(buffer, buffer_size, "%ld", highVal);
-	serveCount++;
-	return true;
-}
-bool chatcmd_join(IRCHANDLE handle, const irc_command* cmd, unsigned int argc, const char** args, char* buffer, unsigned int buffer_size)
+bool chatcmd_join(IRCHANDLE handle, const irc_command* cmd, unsigned int argc, const char** args, char* buffer, unsigned int buffer_size, long cmdArg)
 {
 	KEY key;
 	snprintf(buffer, buffer_size, "JOIN %s\r\n", args[0]);
@@ -229,7 +218,7 @@ bool chatcmd_join(IRCHANDLE handle, const irc_command* cmd, unsigned int argc, c
 	serveCount++;
 	return true;
 }
-bool chatcmd_leave(IRCHANDLE handle, const irc_command* cmd, unsigned int argc, const char** args, char* buffer, unsigned int buffer_size)
+bool chatcmd_leave(IRCHANDLE handle, const irc_command* cmd, unsigned int argc, const char** args, char* buffer, unsigned int buffer_size, long cmdArg)
 {
 	KEY key;
 	snprintf(buffer, buffer_size, "PART %s : As you wish Master.\r\n", cmd->receiver);
@@ -241,51 +230,15 @@ bool chatcmd_leave(IRCHANDLE handle, const irc_command* cmd, unsigned int argc, 
 	serveCount++;
 	return false;
 }
-bool chatcmd_save(IRCHANDLE handle, const irc_command* cmd, unsigned int argc, const char** args, char* buffer, unsigned int buffer_size)
+bool chatcmd_save(IRCHANDLE handle, const irc_command* cmd, unsigned int argc, const char** args, char* buffer, unsigned int buffer_size, long cmdArg)
 {
 	snprintf(buffer, buffer_size, "Tried to save config. Result: %d", config_save(config, CONFIG_PATH));
 	serveCount++;
 	return true;
 }
-bool chatcmd_whoareyou(IRCHANDLE handle, const irc_command* cmd, unsigned int argc, const char** args, char* buffer, unsigned int buffer_size)
-{
-	strncpy(buffer, "I am a bot. You can see my src at https://github.com/X39/Alfred/", buffer_size);
-	serveCount++;
-	return true;
-}
-bool chatcmd_howareyou(IRCHANDLE handle, const irc_command* cmd, unsigned int argc, const char** args, char* buffer, unsigned int buffer_size)
-{
-	size_t size;
-	size = strftime(buffer, buffer_size, "I am fine sir. I am running since %d.%m.%Y %X UTC%z. ", localtime(&startTime));
-	buffer += size;
-	buffer_size -= size;
-	serveCount++;
-	snprintf(buffer, buffer_size, "I also tried to serve as butler %lu times now. Thanks for asking.", serveCount);
-	return true;
-}
-bool chatcmd_fact(IRCHANDLE handle, const irc_command* cmd, unsigned int argc, const char** args, char* buffer, unsigned int buffer_size)
-{
-	int size;
-	KEY key = config_get_key(config, "root/facts");
-
-	size = config_key_get_size(key);
-	if (size == 0)
-		strncpy(buffer, random_error_message(), buffer_size);
-	else
-		snprintf(buffer, buffer_size, "With pleasure Sir. Did you know that %s?", extract_string_from_key(config_key_get_children(key)[rand() % size]));
-	serveCount++;
-	return true;
-}
-bool chatcmd_authed(IRCHANDLE handle, const irc_command* cmd, unsigned int argc, const char** args, char* buffer, unsigned int buffer_size)
+bool chatcmd_authed(IRCHANDLE handle, const irc_command* cmd, unsigned int argc, const char** args, char* buffer, unsigned int buffer_size, long cmdArg)
 {
 	strncpy(buffer, is_auth_user(cmd->sender) > 0 ? "Authorized" : "Non-Authorized", buffer_size);
-	return true;
-}
-bool chatcmd_reload(IRCHANDLE handle, const irc_command* cmd, unsigned int argc, const char** args, char* buffer, unsigned int buffer_size)
-{
-	config_destroy(&config);
-	config = config_create();
-	snprintf(buffer, buffer_size, "Tried to reload config. Result: %d", config_load(config, CONFIG_PATH));
 	return true;
 }
 
@@ -332,7 +285,7 @@ void handle_SIGSEGV(int val)
 	void *array[20];
 	size_t size;
 	size = backtrace(array, 20);
-	fprintf(stderr, "Error: signal %d:\n", sig);
+	fprintf(stderr, "Error: signal %d:\n", val);
 	backtrace_symbols_fd(array, size, STDERR_FILENO);
 	exit(1);
 }
@@ -350,25 +303,34 @@ bool validate_config_requirements(void)
 	return p == 0;
 }
 
+int lh_panic(lua_State *L)
+{
+
+	return 0;
+}
+
 int main(int argc, char** argv)
 {
 	int err;
 	char buffer[BUFF_SIZE_LARGE];
-	#ifdef _WIN32
+	lua_State *L;
+	#ifdef WIN32
 	SetConsoleCtrlHandler(handle_SIGTERM, TRUE);
 	#else
-	struct sigaction action_SIGINT, handle_SIGSEGV;
+	struct sigaction action_SIGINT, action_SIGSEGV;
 
 	memset(&action_SIGINT, 0, sizeof(struct sigaction));
 	action_SIGINT.sa_handler = handle_SIGINT;
 	sigaction(SIGINT, &action_SIGINT, NULL);
 
-	memset(&handle_SIGSEGV, 0, sizeof(struct sigaction));
-	handle_SIGSEGV.sa_handler = handle_SIGSEGV;
-	sigaction(SIGSEGV, &handle_SIGSEGV, NULL);
+	memset(&action_SIGSEGV, 0, sizeof(struct sigaction));
+	action_SIGSEGV.sa_handler = handle_SIGSEGV;
+	sigaction(SIGSEGV, &action_SIGSEGV, NULL);
 	#endif
 	
-	config = config_create();	
+	config = config_create();
+
+	
 	srand((unsigned int)time(NULL));
 	startTime = time(NULL);
 	config_load(config, CONFIG_PATH);
@@ -381,38 +343,44 @@ int main(int argc, char** argv)
 	irc_chat_commands_init(config);
 	irc_user_init();
 
-	irc_chat_commands_add_command(chatcmd_roll, "roll", "from=0;to=30000;", false, false);
-	irc_chat_commands_add_command(chatcmd_whoareyou, "who are you", "", false, false);
-	irc_chat_commands_add_command(chatcmd_howareyou, "how are you", "", false, false);
-	irc_chat_commands_add_command(chatcmd_fact, "fact", "", false, false);
-	irc_chat_commands_add_command(chatcmd_authed, "authed", "", false, true);
-	irc_chat_commands_add_command(NULL, "hangman", "(start);[try];", false, true);
+	irc_chat_commands_add_command(chatcmd_authed, "authed", "", false, true, 0);
+	irc_chat_commands_add_command(chatcmd_save, "save", "", true, true, 0);
+	irc_chat_commands_add_command(chatcmd_join, "join", "channel;perma=f;", true, false, 0);
+	irc_chat_commands_add_command(chatcmd_leave, "leave", "", true, false, 0);
 
-	irc_chat_commands_add_command(chatcmd_save, "save", "", true, true);
-	irc_chat_commands_add_command(chatcmd_reload, "reload", "", true, true);
-	irc_chat_commands_add_command(chatcmd_join, "join", "channel;perma=f;", true, false);
-	irc_chat_commands_add_command(chatcmd_leave, "leave", "", true, false);
+
+	L = luaL_newstate();
+	luaL_openlibs(L);
+	luaopen_alfred_functions(L);
+	lua_atpanic(L, lh_panic);
+	lh_load_lua_modules(L);
 
 
 	if (err = socket_init())
 	{
 		printf("\n\nSocket Init failed with error code %d\n", err);
+		lua_close(L);
 		return 2;
 	}
 	err = irc_client_connect(extract_string_from_key(config_get_key(config, "root/connection/ircaddr")), extract_string_from_key(config_get_key(config, "root/connection/ircport")), extract_string_from_key(config_get_key(config, "root/connection/botname")), &handle);
 	if (err)
 	{
 		printf("\n\nCreating client failed with error code %d\n", err);
+		lua_close(L);
 		return 3;
 	}
 	if (handle == NULL)
+	{
+		lua_close(L);
 		return 4;
+	}
 
 	irc_client_register_callback(handle, handle_INVITE);
 	irc_client_register_callback(handle, handle_KICK);
 	irc_client_register_callback(handle, handle_ENDOFMOTD);
 	irc_client_register_callback(handle, irc_chat_handle_chatcommands);
 	irc_client_register_callback(handle, irc_user_handleUserFlow);
+	irc_client_register_callback(handle, lh_registerraw_callback);
 
 
 	while (1)
@@ -421,7 +389,10 @@ int main(int argc, char** argv)
 		if (err < 0)
 		{
 			if (handle == NULL)
+			{
+				lua_close(L);
 				return 5;
+			}
 			printf("[ERRO]\tPolling failed with %d\n", err);
 			break;
 		}
@@ -435,6 +406,7 @@ int main(int argc, char** argv)
 	if (err = socket_cleanup())
 	{
 		printf("\n\nSocket Init failed with error code %d\n", err);
+		lua_close(L);
 		return 6;
 	}
 	irc_chat_commands_uninit();
