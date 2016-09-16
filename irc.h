@@ -347,5 +347,7 @@ void FNC(register_callback_raw)(IRCHANDLE, IRCCALLBACKRAW);
 int FNC(poll)(IRCHANDLE, char*, unsigned int);
 int FNC(send)(IRCHANDLE, const char*, unsigned int);
 
-int FNC(handle_ping)(IRCHANDLE handle, const char* msg, unsigned int msgLen);
-int FNC(handle_commandCallbacks)(IRCHANDLE handle, const char* msg, unsigned int msgLen);
+int FNC(handle_ping)(IRCHANDLE, const char*, unsigned int);
+int FNC(handle_commandCallbacks)(IRCHANDLE, const char*, unsigned int);
+
+int FNC(send_PRIVMSG)(IRCHANDLE, const char*, const char*);

@@ -32,4 +32,7 @@ typedef struct
 	bool direct_only;
 	long cmdArg;
 }COMMANDCONTAINER;
+COMMANDCONTAINER* containers;
+unsigned int containers_index;
+unsigned int containers_size;
 #endif

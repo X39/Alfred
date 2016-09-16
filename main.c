@@ -330,16 +330,6 @@ int main(int argc, char** argv)
 	
 	config = config_create();
 
-	L = luaL_newstate();
-	luaopen_base(L);
-	luaopen_table(L);
-	luaopen_io(L);
-	luaopen_string(L);
-	luaopen_math(L);
-	luaL_openlibs(L);
-	luaopen_alfred_functions(L);
-	lua_atpanic(L, lh_panic);
-	lh_load_lua_modules(L);
 	
 	srand((unsigned int)time(NULL));
 	startTime = time(NULL);
@@ -347,7 +337,6 @@ int main(int argc, char** argv)
 	if (!validate_config_requirements())
 	{
 		printf("\n\nCannot continue, %s is not setted up correctly\n", CONFIG_PATH);
-		lua_close(L);
 		return 1;
 	}
 
@@ -358,6 +347,13 @@ int main(int argc, char** argv)
 	irc_chat_commands_add_command(chatcmd_save, "save", "", true, true, 0);
 	irc_chat_commands_add_command(chatcmd_join, "join", "channel;perma=f;", true, false, 0);
 	irc_chat_commands_add_command(chatcmd_leave, "leave", "", true, false, 0);
+
+
+	L = luaL_newstate();
+	luaL_openlibs(L);
+	luaopen_alfred_functions(L);
+	lua_atpanic(L, lh_panic);
+	lh_load_lua_modules(L);
 
 
 	if (err = socket_init())

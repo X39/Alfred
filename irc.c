@@ -312,3 +312,12 @@ int FNC(handle_commandCallbacks)(IRCHANDLE handle, const char* msg, unsigned int
 	}
 	return 0;
 }
+
+int FNC(send_PRIVMSG)(IRCHANDLE handle, const char *msg, const char *receiver)
+{
+	char *privmsg;
+	unsigned int privmsg_size = strlen(msg) + strlen("PRIVMSG  :\r\n") + strlen(receiver);
+	privmsg = alloca(sizeof(char) * (privmsg_size + 1));
+	sprintf(privmsg, "PRIVMSG %s :%s\r\n", receiver, msg);
+	FNC(send)(handle, privmsg, privmsg_size);
+}

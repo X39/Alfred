@@ -12,9 +12,9 @@
 CONFIG config;
 char* botname;
 unsigned int botname_length;
-COMMANDCONTAINER* containers;
-unsigned int containers_index;
-unsigned int containers_size;
+extern COMMANDCONTAINER* containers;
+extern unsigned int containers_index;
+extern unsigned int containers_size;
 
 extern const char* extract_string_from_key(KEY* key);
 
