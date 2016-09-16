@@ -119,7 +119,7 @@ bool lh_registermsg_callback(IRCHANDLE handle, const irc_command* cmd, unsigned 
 	i = lua_pcall(currentL, 4 + argc, 0, 0);
 	if (i == LUA_ERRRUN)
 	{
-		printf("[LERR]\t%s", lua_tostring(currentL, -1));
+		printf("[LERR]\t%s\n", lua_tostring(currentL, -1));
 	}
 	return false;
 }
@@ -138,7 +138,7 @@ int lh_registerraw_callback(IRCHANDLE handle, const irc_command* cmd)
 		j = lua_pcall(currentL, 4, 0, 0);
 		if (j == LUA_ERRRUN)
 		{
-			printf("[LERR]\t%s", lua_tostring(currentL, -1));
+			printf("[LERR]\t%s\n", lua_tostring(currentL, -1));
 		}
 	}
 	return 1;
