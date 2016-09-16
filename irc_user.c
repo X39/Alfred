@@ -147,9 +147,10 @@ void irc_user_free_channel(CHANNEL** channel)
 	c = *channel;
 	for (i = 0; i < c->users_last; i++)
 	{
-		irc_user_free_user(c->users + i);
+		irc_user_free_user(&(c->users[i]));
 	}
 	free(c);
+	*channel = NULL;
 }
 
 
@@ -164,7 +165,7 @@ void irc_user_uninit(void)
 	unsigned int i;
 	for (i = 0; i < channels_size; i++)
 	{
-		irc_user_free_channel(channels + i);
+		irc_user_free_channel($(channels[i]));
 	}
 	free(channels);
 }

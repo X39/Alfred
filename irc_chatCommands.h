@@ -4,7 +4,7 @@
 #include "config.h"
 
 
-typedef bool(*CHATCOMMAND)(IRCHANDLE, const irc_command*, unsigned int, const char**, char*, unsigned int);
+typedef bool(*CHATCOMMAND)(IRCHANDLE, const irc_command*, unsigned int, const char**, char*, unsigned int, long);
 
 
 bool irc_chat_handle_chatcommands(IRCHANDLE, const irc_command*);

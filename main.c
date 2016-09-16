@@ -7,9 +7,9 @@
 #include "string_op.h"
 #include "irc_user.h"
 #include "mylua.h"
-#include "lua\include\lua.h"
-#include "lua\include\lauxlib.h"
-#include "lua\include\lualib.h"
+#include "lua/include/lua.h"
+#include "lua/include/lauxlib.h"
+#include "lua/include/lualib.h"
 
 #include <stdio.h>
 #include <malloc.h>
@@ -285,7 +285,7 @@ void handle_SIGSEGV(int val)
 	void *array[20];
 	size_t size;
 	size = backtrace(array, 20);
-	fprintf(stderr, "Error: signal %d:\n", sig);
+	fprintf(stderr, "Error: signal %d:\n", val);
 	backtrace_symbols_fd(array, size, STDERR_FILENO);
 	exit(1);
 }
@@ -317,15 +317,15 @@ int main(int argc, char** argv)
 	#ifdef WIN32
 	SetConsoleCtrlHandler(handle_SIGTERM, TRUE);
 	#else
-	struct sigaction action_SIGINT, handle_SIGSEGV;
+	struct sigaction action_SIGINT, action_SIGSEGV;
 
 	memset(&action_SIGINT, 0, sizeof(struct sigaction));
 	action_SIGINT.sa_handler = handle_SIGINT;
 	sigaction(SIGINT, &action_SIGINT, NULL);
 
-	memset(&handle_SIGSEGV, 0, sizeof(struct sigaction));
-	handle_SIGSEGV.sa_handler = handle_SIGSEGV;
-	sigaction(SIGSEGV, &handle_SIGSEGV, NULL);
+	memset(&action_SIGSEGV, 0, sizeof(struct sigaction));
+	action_SIGSEGV.sa_handler = handle_SIGSEGV;
+	sigaction(SIGSEGV, &action_SIGSEGV, NULL);
 	#endif
 	
 	config = config_create();

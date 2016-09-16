@@ -1,6 +1,6 @@
 #pragma once
 
-#include "lua\include\lua.h"
+#include "lua/include/lua.h"
 #include "irc.h"
 
 int lh_panic(lua_State*);

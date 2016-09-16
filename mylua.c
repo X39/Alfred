@@ -1,8 +1,8 @@
 #include "global.h"
 #include "mylua.h"
-#include "lua\include\lua.h"
-#include "lua\include\lauxlib.h"
-#include "lua\include\lualib.h"
+#include "lua/include/lua.h"
+#include "lua/include/lauxlib.h"
+#include "lua/include/lualib.h"
 #include "irc_chatCommands.h"
 #include "string_op.h"
 
@@ -12,21 +12,21 @@
 #if UNICODE && _UNICODE
 #undef UNICODE
 #undef _UNICODE
-#include "tinydir\tinydir.h"
+#include "tinydir/tinydir.h"
 #define UNICODE
 #define _UNICODE
 #else
 	#ifdef UNICODE
 		#undef UNICODE
-		#include "tinydir\tinydir.h"
+		#include "tinydir/tinydir.h"
 		#define UNICODE
 	#else
 		#ifdef _UNICODE
 			#undef _UNICODE
-			#include "tinydir\tinydir.h"
+			#include "tinydir/tinydir.h"
 			#define _UNICODE
 		#else
-			#include "tinydir\tinydir.h"
+			#include "tinydir/tinydir.h"
 		#endif
 	#endif
 #endif
