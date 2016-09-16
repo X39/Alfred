@@ -1,7 +1,7 @@
 #pragma once
 
 
-#ifdef _WIN32
+#ifdef WIN32
 /* See http://stackoverflow.com/questions/12765743/getaddrinfo-on-win32 */
 #include <winsock2.h>
 #include <Ws2tcpip.h>

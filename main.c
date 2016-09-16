@@ -17,8 +17,8 @@
 #include <signal.h>
 #include <string.h>
 #include <time.h>
-#ifdef _WIN32
-#pragma comment(lib, "lua\lua53.lib")
+#ifdef WIN32
+#pragma comment(lib, "lua\\lua53")
 #else
 #include <execinfo.h>
 #endif
@@ -314,7 +314,7 @@ int main(int argc, char** argv)
 	int err;
 	char buffer[BUFF_SIZE_LARGE];
 	lua_State *L;
-	#ifdef _WIN32
+	#ifdef WIN32
 	SetConsoleCtrlHandler(handle_SIGTERM, TRUE);
 	#else
 	struct sigaction action_SIGINT, handle_SIGSEGV;
@@ -330,14 +330,16 @@ int main(int argc, char** argv)
 	
 	config = config_create();
 
-	L = lua_open();
+	L = luaL_newstate();
 	luaopen_base(L);
 	luaopen_table(L);
 	luaopen_io(L);
 	luaopen_string(L);
 	luaopen_math(L);
+	luaL_openlibs(L);
 	luaopen_alfred_functions(L);
 	lua_atpanic(L, lh_panic);
+	lh_load_lua_modules(L);
 	
 	srand((unsigned int)time(NULL));
 	startTime = time(NULL);
@@ -345,6 +347,7 @@ int main(int argc, char** argv)
 	if (!validate_config_requirements())
 	{
 		printf("\n\nCannot continue, %s is not setted up correctly\n", CONFIG_PATH);
+		lua_close(L);
 		return 1;
 	}
 
@@ -360,16 +363,21 @@ int main(int argc, char** argv)
 	if (err = socket_init())
 	{
 		printf("\n\nSocket Init failed with error code %d\n", err);
+		lua_close(L);
 		return 2;
 	}
 	err = irc_client_connect(extract_string_from_key(config_get_key(config, "root/connection/ircaddr")), extract_string_from_key(config_get_key(config, "root/connection/ircport")), extract_string_from_key(config_get_key(config, "root/connection/botname")), &handle);
 	if (err)
 	{
 		printf("\n\nCreating client failed with error code %d\n", err);
+		lua_close(L);
 		return 3;
 	}
 	if (handle == NULL)
+	{
+		lua_close(L);
 		return 4;
+	}
 
 	irc_client_register_callback(handle, handle_INVITE);
 	irc_client_register_callback(handle, handle_KICK);
@@ -385,7 +393,10 @@ int main(int argc, char** argv)
 		if (err < 0)
 		{
 			if (handle == NULL)
+			{
+				lua_close(L);
 				return 5;
+			}
 			printf("[ERRO]\tPolling failed with %d\n", err);
 			break;
 		}
@@ -399,6 +410,7 @@ int main(int argc, char** argv)
 	if (err = socket_cleanup())
 	{
 		printf("\n\nSocket Init failed with error code %d\n", err);
+		lua_close(L);
 		return 6;
 	}
 	irc_chat_commands_uninit();

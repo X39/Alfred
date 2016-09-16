@@ -258,7 +258,7 @@ KEY FNC(get_key)(CONFIG c, const char* key)
 	char* keyCopy;
 	unsigned int i, keyCount;
 	DATA* d = conf->root;
-	DATA* res;
+	DATA* res = NULL;
 	DATA** children;
 	if (key == NULL || key[0] == '\0')
 		return NULL;
@@ -289,7 +289,7 @@ KEY FNC(get_or_create_key)(CONFIG c, const char* key)
 	char* keyCopy;
 	unsigned int i, keyCount;
 	DATA* d = conf->root;
-	DATA* res;
+	DATA* res = NULL;
 	DATA** children;
 	if (key == NULL || key[0] == '\0')
 		return NULL;

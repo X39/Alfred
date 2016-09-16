@@ -3,6 +3,8 @@
 #include "lua\include\lauxlib.h"
 #include "lua\include\lualib.h"
 #include "irc_chatCommands.h"
+#include "tinydir\tinydir.h"
+#include "string_op.h"
 
 #include <stdlib.h>
 
@@ -119,13 +121,8 @@ int lh_registerraw_callback(IRCHANDLE handle, const irc_command* cmd)
 	}
 }
 
-int luaopen_alfred_functions(lua_State *L)
+int luaopen_alfred_functions_inner(lua_State *L)
 {
-	currentL = L;
-	static const struct luaL_Reg globallib[] = {
-		{ "print", lh_print },
-		{ NULL, NULL }
-	};
 	static const struct luaL_Reg alfredlib[] = {
 		{ "registerraw", lh_registerraw },	//Alfred.registerraw(callbackfunction)
 											//callbackfunction => arg0.content, arg0.receiver, arg0.sender, arg0.type
@@ -133,14 +130,63 @@ int luaopen_alfred_functions(lua_State *L)
 											//callbackfunction => arg0.cmd.content, arg0.cmd.receiver, arg0.cmd.sender, arg0.cmd.type, arg0.args[]
 		{ NULL, NULL }
 	};
-	lua_getglobal(L, "_G");
-	luaL_setfuncs(L, globallib, 0);
-	lua_pop(L, 1);
+	luaL_newlib(L, alfredlib);
+}
 
-	luaL_newlib(L, "Alfred");
-	luaL_setfuncs(L, alfredlib, 0);
-	lua_pop(L, 1);
+int luaopen_alfred_functions(lua_State *L)
+{
+	currentL = L;
+	lua_register(L, "print", lh_print);
+	luaL_requiref(L, "alfred", luaopen_alfred_functions_inner, 0);
 	lh_raw_callback_ids_size = BUFF_SIZE_TINY;
 	lh_raw_callback_ids = realloc(lh_raw_callback_ids, sizeof(int) * lh_raw_callback_ids_size);
 	lh_raw_callback_ids_head = 0;
+}
+
+int lh_load_lua_modules(lua_State *L)
+{
+	tinydir_dir dir;
+	unsigned int modCount = 0;
+	
+	if (tinydir_open(&dir, "modules/"))
+	{
+		printf("[LMOD]\tFailed to open module folder 'modules\\'\n");
+		return -1;
+	}
+	printf("[LMOD]\tLoading modules ...\n");
+	while (dir.has_next)
+	{
+		tinydir_file file;
+		tinydir_readfile(&dir, &file);
+		if (str_ewi(file.extension, "lua"))
+		{
+			if (luaL_loadfile(L, file.path))
+			{
+				printf("[LMOD]\tFailed to load module %s (%s)\n", file.name, lua_tostring(L, -1));
+				continue;
+			}
+			else
+			{
+				if (lua_pcall(L, 0, 0, 0))
+				{
+					printf("[LMOD]\tFailed to load module %s (%s)\n", file.name, lua_tostring(L, -1));
+					continue;
+				}
+				else
+				{
+					printf("[LMOD]\tSuccessfuly loaded module %s\n", file.name);
+					modCount++;
+				}
+			}
+		}
+		;
+		if (tinydir_next(&dir))
+		{
+			printf("[LMOD]\tFailed to get next in modules dir (IO error?)\n");
+			break;
+		}
+	}
+
+	printf("[LMOD]\tLoaded %d modules\n", modCount);
+	tinydir_close(&dir);
 }

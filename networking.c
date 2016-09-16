@@ -5,7 +5,7 @@
 
 int socket_init(void)
 {
-#ifdef _WIN32
+#ifdef WIN32
 	WSADATA wsa_data;
 	return WSAStartup(MAKEWORD(1, 1), &wsa_data);
 #else
@@ -15,7 +15,7 @@ int socket_init(void)
 
 int socket_cleanup(void)
 {
-#ifdef _WIN32
+#ifdef WIN32
 	return WSACleanup();
 #else
 	return 0;
@@ -26,7 +26,7 @@ int socket_close(SOCKET sock)
 
 	int status = 0;
 
-#ifdef _WIN32
+#ifdef WIN32
 	status = shutdown(sock, SD_BOTH);
 	if (status == 0) { status = closesocket(sock); }
 #else
