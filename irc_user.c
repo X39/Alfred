@@ -39,7 +39,7 @@ void irc_user_remove_user(const char* channel, const char* username)
 		break;
 	}
 }
-const USER* irc_user_get_user(const char* channel, const char* username)
+USER* irc_user_get_user(const char* channel, const char* username)
 {
 	unsigned int i, j;
 	int k = -1;
@@ -165,7 +165,7 @@ void irc_user_uninit(void)
 	unsigned int i;
 	for (i = 0; i < channels_size; i++)
 	{
-		irc_user_free_channel($(channels[i]));
+		irc_user_free_channel(&(channels[i]));
 	}
 	free(channels);
 }
