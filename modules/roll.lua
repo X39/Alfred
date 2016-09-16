@@ -8,4 +8,4 @@ function testCallback(content, receiver, sender, kind, from, to)
 	end
 end
 
-alfred.registermsg(testCallback, "roll", "from=0;to=30000;", false, false);
+alfred.registerMsg(testCallback, "roll", "from=0;to=30000;", false, false);

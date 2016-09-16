@@ -234,11 +234,11 @@ int lh_getChannelVar(lua_State *L)
 int luaopen_alfred_functions_inner(lua_State *L)
 {
 	static const struct luaL_Reg alfredlib[] = {
-		{ "registerraw", lh_registerraw },				//alfred.registerraw(callbackfunction)
+		{ "registerRaw", lh_registerraw },				//alfred.registerraw(callbackfunction)
 														//callbackfunction => content, receiver, sender, kind, arg0, arg1, argN
-		{ "registermsg", lh_registermsg },				//alfred.registermsg(callbackfunction, commandname, formatprovider, requiresauth, directmessageonly)
+		{ "registerMsg", lh_registermsg },				//alfred.registermsg(callbackfunction, commandname, formatprovider, requiresauth, directmessageonly)
 														//callbackfunction => content, receiver, sender, kind
-		{ "sendprivmsg", lh_sendprivmsg },				//alfred.sendprivmsg(message, receiver)
+		{ "sendPrivMsg", lh_sendprivmsg },				//alfred.sendprivmsg(message, receiver)
 		{ "respond", lh_respond },						//alfred.respond(message, receiver, sender)
 		{ "getRandomResponse", lh_getRandomResponse },	//alfred.getRandomResponse(responseType)
 		{ "setChannelVar", lh_setChannelVar },			//alfred.lh_setChannelVar(channel, namespace, variable, value)
