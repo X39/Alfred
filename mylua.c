@@ -245,12 +245,13 @@ int lh_getChannelList(lua_State *L)
 {
 	int i;
 	lua_newtable(L);
-	for (i = 0; i < channels_size; i++)
+	for (i = channels_size - 1; i >= 0; i--)
 	{
 		if (channels[i] == NULL)
 			continue;
+		lua_pushnumber(L, i);
 		lua_pushstring(L, channels[i]->channel_name);
-		lua_rawseti(L, -2, i + 1);
+		lua_settable(L, -3);
 	}
 	return 1;
 }
