@@ -69,8 +69,9 @@ USER* irc_user_get_user(const char* channel, const char* username)
 					return channels[i]->users[j];
 				}
 			}
+			break;
 		}
-		break;
+		c = NULL;
 	}
 	
 	if (c == NULL)
