@@ -27,6 +27,7 @@
 
 
 IRCHANDLE handle;
+lua_State* LUAVM;
 CONFIG config;
 time_t startTime;
 unsigned long serveCount = 0;
@@ -154,7 +155,7 @@ int handle_ENDOFMOTD(IRCHANDLE handle, const irc_command* cmd)
 				}
 			}
 		}
-
+		reloadModules();
 		return true;
 	}
 	return false;
@@ -241,6 +242,11 @@ bool chatcmd_authed(IRCHANDLE handle, const irc_command* cmd, unsigned int argc,
 	strncpy(buffer, is_auth_user(cmd->sender) > 0 ? "Authorized" : "Non-Authorized", buffer_size);
 	return true;
 }
+bool chatcmd_reload(IRCHANDLE handle, const irc_command* cmd, unsigned int argc, const char** args, char* buffer, unsigned int buffer_size, long cmdArg)
+{
+	reloadModules();
+	return false;
+}
 
 #ifdef WIN32
 BOOL WINAPI handle_SIGTERM(DWORD val)
@@ -269,6 +275,7 @@ void handle_SIGINT(int val)
 	int err;
 	irc_client_send(handle, "QUIT :My Master has callen me\r\n", sizeof("QUIT :My Master has callen me\r\n"));
 	irc_client_close(&handle);
+	lua_close(LUAVM);
 	irc_user_uninit();
 	irc_chat_commands_uninit();
 	config_save(config, CONFIG_PATH);
@@ -296,24 +303,50 @@ bool validate_config_requirements(void)
 	unsigned int p = 0;
 	char* key;
 
-	key = "root/connection/botname"; if ((p += config_get_key(config, key) == NULL)) printf("[ERRO]\tMissing key '%s'\n");
-	key = "root/connection/ircport"; if ((p += config_get_key(config, key) == NULL)) printf("[ERRO]\tMissing key '%s'\n");
-	key = "root/connection/ircaddr"; if ((p += config_get_key(config, key) == NULL)) printf("[ERRO]\tMissing key '%s'\n");
+	key = "root/connection/botname";	if ((p += config_get_key(config, key) == NULL)) printf("[ERRO]\tMissing key '%s'\n");
+	key = "root/connection/bottrigger"; if ((p += config_get_key(config, key) == NULL)) printf("[ERRO]\tMissing key '%s'\n");
+	key = "root/connection/ircport";	if ((p += config_get_key(config, key) == NULL)) printf("[ERRO]\tMissing key '%s'\n");
+	key = "root/connection/ircaddr";	if ((p += config_get_key(config, key) == NULL)) printf("[ERRO]\tMissing key '%s'\n");
 
 	return p == 0;
 }
 
 int lh_panic(lua_State *L)
 {
-
+	printf("[LERR]\tLUA PANIC\n");
 	return 0;
+}
+
+int reloadModules()
+{
+	int i = 0;
+	irc_chat_commands_uninit();
+	irc_chat_commands_init();
+	i += lua_clear_handles();
+	irc_client_clear_callback_raw(handle);
+	irc_client_clear_callback(handle);
+
+	irc_client_register_callback_raw(handle, lh_registerraw_callback);
+
+	irc_client_register_callback(handle, handle_INVITE);
+	irc_client_register_callback(handle, handle_KICK);
+	irc_client_register_callback(handle, irc_chat_handle_chatcommands);
+	irc_client_register_callback(handle, irc_user_handleUserFlow);
+	irc_client_register_callback(handle, lh_handle_PRIVMSG);
+
+	irc_chat_commands_add_command(chatcmd_authed, "authed", "", false, true, 0);
+	irc_chat_commands_add_command(chatcmd_save, "save", "", true, true, 0);
+	irc_chat_commands_add_command(chatcmd_join, "join", "channel;perma=f;", true, false, 0);
+	irc_chat_commands_add_command(chatcmd_leave, "leave", "", true, false, 0);
+	irc_chat_commands_add_command(chatcmd_reload, "reload", "", true, true, 0);
+	i += lh_load_lua_modules(LUAVM);
+	return i;
 }
 
 int main(int argc, char** argv)
 {
 	int err;
 	char buffer[BUFF_SIZE_LARGE];
-	lua_State *L;
 	#ifdef WIN32
 	SetConsoleCtrlHandler(handle_SIGTERM, TRUE);
 	#else
@@ -340,48 +373,35 @@ int main(int argc, char** argv)
 		return 1;
 	}
 
-	irc_chat_commands_init(config);
 	irc_user_init();
 
-	irc_chat_commands_add_command(chatcmd_authed, "authed", "", false, true, 0);
-	irc_chat_commands_add_command(chatcmd_save, "save", "", true, true, 0);
-	irc_chat_commands_add_command(chatcmd_join, "join", "channel;perma=f;", true, false, 0);
-	irc_chat_commands_add_command(chatcmd_leave, "leave", "", true, false, 0);
-
-
-	L = luaL_newstate();
-	luaL_openlibs(L);
-	luaopen_alfred_functions(L);
-	lua_atpanic(L, lh_panic);
-	lh_load_lua_modules(L);
+	LUAVM = luaL_newstate();
+	luaL_openlibs(LUAVM);
+	luaopen_alfred_functions(LUAVM);
+	lua_atpanic(LUAVM, lh_panic);
+	
 
 
 	if (err = socket_init())
 	{
 		printf("\n\nSocket Init failed with error code %d\n", err);
-		lua_close(L);
+		lua_close(LUAVM);
 		return 2;
 	}
 	err = irc_client_connect(extract_string_from_key(config_get_key(config, "root/connection/ircaddr")), extract_string_from_key(config_get_key(config, "root/connection/ircport")), extract_string_from_key(config_get_key(config, "root/connection/botname")), &handle);
 	if (err)
 	{
 		printf("\n\nCreating client failed with error code %d\n", err);
-		lua_close(L);
+		lua_close(LUAVM);
 		return 3;
 	}
 	if (handle == NULL)
 	{
-		lua_close(L);
+		lua_close(LUAVM);
 		return 4;
 	}
 
-	irc_client_register_callback(handle, handle_INVITE);
-	irc_client_register_callback(handle, handle_KICK);
 	irc_client_register_callback(handle, handle_ENDOFMOTD);
-	irc_client_register_callback(handle, irc_chat_handle_chatcommands);
-	irc_client_register_callback(handle, irc_user_handleUserFlow);
-	irc_client_register_callback(handle, lh_registerraw_callback);
-
 
 	while (1)
 	{
@@ -390,7 +410,7 @@ int main(int argc, char** argv)
 		{
 			if (handle == NULL)
 			{
-				lua_close(L);
+				lua_close(LUAVM);
 				return 5;
 			}
 			printf("[ERRO]\tPolling failed with %d\n", err);
@@ -406,7 +426,7 @@ int main(int argc, char** argv)
 	if (err = socket_cleanup())
 	{
 		printf("\n\nSocket Init failed with error code %d\n", err);
-		lua_close(L);
+		lua_close(LUAVM);
 		return 6;
 	}
 	irc_chat_commands_uninit();

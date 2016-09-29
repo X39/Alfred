@@ -46,3 +46,6 @@ void irc_user_uninit(void);
 
 void irc_user_set_variable(USER*, const char*, const char*);
 const char* irc_user_get_variable(USER*, const char*);
+
+CHANNEL** channels;
+unsigned int channels_size;

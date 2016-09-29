@@ -336,13 +336,20 @@ typedef struct
 } irc_command;
 
 typedef void* IRCHANDLE;
+//arg0 -> IRCHANDLE of corresponding obj
+//arg1 -> irc_command structure where everything is parsed inside
 typedef BOOL(*IRCCALLBACK)(IRCHANDLE, const irc_command*);
+//arg0 -> IRCHANDLE of corresponding obj
+//arg1 -> string received
+//arg2 -> length of received string
 typedef BOOL(*IRCCALLBACKRAW)(IRCHANDLE, const char*, unsigned int);
 
 int FNC(connect)(const char*, const char*, const char*, IRCHANDLE*);
 void FNC(close)(IRCHANDLE*);
 void FNC(register_callback)(IRCHANDLE, IRCCALLBACK);
 void FNC(register_callback_raw)(IRCHANDLE, IRCCALLBACKRAW);
+void FNC(clear_callback)(IRCHANDLE);
+void FNC(clear_callback_raw)(IRCHANDLE);
 
 int FNC(poll)(IRCHANDLE, char*, unsigned int);
 int FNC(send)(IRCHANDLE, const char*, unsigned int);
@@ -351,3 +358,4 @@ int FNC(handle_ping)(IRCHANDLE, const char*, unsigned int);
 int FNC(handle_commandCallbacks)(IRCHANDLE, const char*, unsigned int);
 
 int FNC(send_PRIVMSG)(IRCHANDLE, const char*, const char*);
+int FNC(send_PRIVMSG_ACTION)(IRCHANDLE, const char*, const char*);

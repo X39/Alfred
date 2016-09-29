@@ -61,11 +61,21 @@ int lh_print(lua_State *L)
 	return 0;
 }
 
-int *lh_raw_callback_ids = NULL;
-int lh_raw_callback_ids_size = 0;
-int lh_raw_callback_ids_head = 0;
+extern int *lh_raw_callback_ids = NULL;
+extern int lh_raw_callback_ids_size = 0;
+extern int lh_raw_callback_ids_head = 0;
 
-extern lua_State *currentL;
+extern int *lh_privmsg_callback_ids = NULL;
+extern int lh_privmsg_callback_ids_size = 0;
+extern int lh_privmsg_callback_ids_head = 0;
+
+extern int *lh_msg_callback_ids = NULL;
+extern int lh_msg_callback_ids_size = 0;
+extern int lh_msg_callback_ids_head = 0;
+
+extern lua_State *LUAVM;
+
+
 
 int lh_registerraw(lua_State *L)
 {
@@ -85,6 +95,13 @@ int lh_registermsg(lua_State *L)
 	const char* format;
 	int reqAuth;
 	int reqDirect;
+	
+	if (lh_msg_callback_ids_head == lh_msg_callback_ids_size)
+	{
+		lh_msg_callback_ids_size += BUFF_INCREASE;
+		lh_msg_callback_ids = realloc(lh_msg_callback_ids, sizeof(int) * lh_msg_callback_ids_size);
+	}
+
 	luaL_checktype(L, 1, LUA_TFUNCTION);
 	luaL_checktype(L, 2, LUA_TSTRING);
 	luaL_checktype(L, 3, LUA_TSTRING);
@@ -100,26 +117,39 @@ int lh_registermsg(lua_State *L)
 	if (ref == LUA_REFNIL || ref == LUA_NOREF)
 		return 0;
 	irc_chat_commands_add_command(lh_registermsg_callback, name, format, reqAuth, reqDirect, ref);
+
+	lh_msg_callback_ids[lh_msg_callback_ids_head] = ref;
+	lh_msg_callback_ids_head++;
 	return 0;
+}
+int lh_registerprivmsg(lua_State *L)
+{
+	if (lh_privmsg_callback_ids_head == lh_privmsg_callback_ids_size)
+	{
+		lh_privmsg_callback_ids_size += BUFF_INCREASE;
+		lh_privmsg_callback_ids = realloc(lh_privmsg_callback_ids, sizeof(int) * lh_privmsg_callback_ids_size);
+	}
+	lh_privmsg_callback_ids[lh_privmsg_callback_ids_head] = luaL_ref(L, LUA_REGISTRYINDEX);
+	lh_privmsg_callback_ids_head++;
 }
 bool lh_registermsg_callback(IRCHANDLE handle, const irc_command* cmd, unsigned int argc, const char** args, char* buffer, unsigned int buffer_size, long cmdArg)
 {
 	int i;
-	lua_rawgeti(currentL, LUA_REGISTRYINDEX, (lua_Integer)cmdArg);
+	lua_rawgeti(LUAVM, LUA_REGISTRYINDEX, (lua_Integer)cmdArg);
 
-	lua_pushstring(currentL, cmd->content);
-	lua_pushstring(currentL, cmd->receiver);
-	lua_pushstring(currentL, cmd->sender);
-	lua_pushinteger(currentL, cmd->type);
+	lua_pushstring(LUAVM, cmd->content);
+	lua_pushstring(LUAVM, cmd->receiver);
+	lua_pushstring(LUAVM, cmd->sender);
+	lua_pushinteger(LUAVM, cmd->type);
 	for (i = 0; i < argc; i++)
 	{
-		lua_pushstring(currentL, args[i]);
+		lua_pushstring(LUAVM, args[i]);
 	}
 
-	i = lua_pcall(currentL, 4 + argc, 0, 0);
+	i = lua_pcall(LUAVM, 4 + argc, 0, 0);
 	if (i == LUA_ERRRUN)
 	{
-		printf("[LERR]\t%s\n", lua_tostring(currentL, -1));
+		printf("[LERR]\t%s\n", lua_tostring(LUAVM, -1));
 	}
 	return false;
 }
@@ -128,17 +158,17 @@ int lh_registerraw_callback(IRCHANDLE handle, const irc_command* cmd)
 	int i, j;
 	for (i = 0; i < lh_raw_callback_ids_head; i++)
 	{
-		lua_rawgeti(currentL, LUA_REGISTRYINDEX, lh_raw_callback_ids[i]);
+		lua_rawgeti(LUAVM, LUA_REGISTRYINDEX, lh_raw_callback_ids[i]);
 
-		lua_pushstring(currentL, cmd->content);
-		lua_pushstring(currentL, cmd->receiver);
-		lua_pushstring(currentL, cmd->sender);
-		lua_pushinteger(currentL, cmd->type);
+		lua_pushstring(LUAVM, cmd->content);
+		lua_pushstring(LUAVM, cmd->receiver);
+		lua_pushstring(LUAVM, cmd->sender);
+		lua_pushinteger(LUAVM, cmd->type);
 
-		j = lua_pcall(currentL, 4, 0, 0);
+		j = lua_pcall(LUAVM, 4, 0, 0);
 		if (j == LUA_ERRRUN)
 		{
-			printf("[LERR]\t%s\n", lua_tostring(currentL, -1));
+			printf("[LERR]\t%s\n", lua_tostring(LUAVM, -1));
 		}
 	}
 	return 1;
@@ -148,29 +178,7 @@ int lh_sendprivmsg(lua_State *L)
 {
 	const char *msg = luaL_checklstring(L, 1, NULL);
 	const char *recv = luaL_checklstring(L, 2, NULL);
-	char *buff;
-	const char *res;
-	res = strchr(recv, '!');
-
-	if (res)
-	{
-		buff = alloca(sizeof(char) * (res - recv + 1));
-		strncpy(buff, recv, res - recv);
-		buff[res - recv] = '\0';
-		irc_client_send_PRIVMSG(handle, msg, buff);
-	}
-	else if (recv[0] != '#')
-	{
-		buff = alloca(sizeof(char) * (strlen(recv) + 2));
-		buff[0] = '#';
-		strcpy(buff + 1, recv);
-		irc_client_send_PRIVMSG(handle, msg, buff);
-	}
-	else
-	{
-		irc_client_send_PRIVMSG(handle, msg, recv);
-	}
-
+	irc_client_send_PRIVMSG(handle, msg, recv);
 	return 0;
 }
 int lh_respond(lua_State *L)
@@ -231,13 +239,53 @@ int lh_getChannelVar(lua_State *L)
 	}
 	return 1;
 }
+extern CHANNEL** channels;
+extern unsigned int channels_size;
+int lh_getChannelList(lua_State *L)
+{
+	int i;
+	lua_newtable(L);
+	for (i = 0; i < channels_size; i++)
+	{
+		if (channels[i] == NULL)
+			continue;
+		lua_pushstring(L, channels[i]->channel_name);
+		lua_rawseti(L, -2, i + 1);
+	}
+	return 1;
+}
+
+int lh_handle_PRIVMSG(IRCHANDLE handle, const irc_command *cmd)
+{
+	int i, j;
+	if (cmd->type != IRC_PRIVMSG)
+		return;
+	for (i = 0; i < lh_privmsg_callback_ids_head; i++)
+	{
+		lua_rawgeti(LUAVM, LUA_REGISTRYINDEX, lh_privmsg_callback_ids[i]);
+
+		lua_pushstring(LUAVM, cmd->content);
+		lua_pushstring(LUAVM, cmd->receiver);
+		lua_pushstring(LUAVM, cmd->sender);
+
+		j = lua_pcall(LUAVM, 3, 0, 0);
+		if (j == LUA_ERRRUN)
+		{
+			printf("[LERR]\t%s\n", lua_tostring(LUAVM, -1));
+		}
+	}
+	return 0;
+}
+
 int luaopen_alfred_functions_inner(lua_State *L)
 {
 	static const struct luaL_Reg alfredlib[] = {
-		{ "registerRaw", lh_registerraw },				//alfred.registerraw(callbackfunction)
-														//callbackfunction => content, receiver, sender, kind, arg0, arg1, argN
-		{ "registerMsg", lh_registermsg },				//alfred.registermsg(callbackfunction, commandname, formatprovider, requiresauth, directmessageonly)
+		{ "registerRaw", lh_registerraw },				//alfred.registerRaw(callbackfunction)
 														//callbackfunction => content, receiver, sender, kind
+		{ "registerCmd", lh_registermsg },				//alfred.registerCmd(callbackfunction, commandname, formatprovider, requiresauth, directmessageonly)
+														//callbackfunction => content, receiver, sender, kind, arg0, arg1, argN
+		{ "registerMsg", lh_registerprivmsg },			//alfred.registerMsg(callbackfunction)
+														//callbackfunction => content, receiver, sender
 		{ "sendPrivMsg", lh_sendprivmsg },				//alfred.sendprivmsg(message, receiver)
 		{ "respond", lh_respond },						//alfred.respond(message, receiver, sender)
 		{ "getRandomResponse", lh_getRandomResponse },	//alfred.getRandomResponse(responseType)
@@ -251,7 +299,7 @@ int luaopen_alfred_functions_inner(lua_State *L)
 
 int luaopen_alfred_functions(lua_State *L)
 {
-	currentL = L;
+	LUAVM = L;
 	lua_register(L, "print", lh_print);
 	luaL_requiref(L, "alfred", luaopen_alfred_functions_inner, 1);
 	lh_raw_callback_ids_size = BUFF_SIZE_TINY;
@@ -304,4 +352,28 @@ int lh_load_lua_modules(lua_State *L)
 
 	printf("[LMOD]\tLoaded %d modules\n", modCount);
 	tinydir_close(&dir);
+}
+
+void lua_clear_handles()
+{
+	int i;
+	for (i = 0; i < lh_raw_callback_ids_head; i++)
+	{
+		luaL_unref(LUAVM, LUA_REGISTRYINDEX, lh_raw_callback_ids[i]);
+	}
+	lh_raw_callback_ids_head = 0;
+
+
+	for (i = 0; i < lh_privmsg_callback_ids_head; i++)
+	{
+		luaL_unref(LUAVM, LUA_REGISTRYINDEX, lh_privmsg_callback_ids[i]);
+	}
+	lh_privmsg_callback_ids_head = 0;
+
+
+	for (i = 0; i < lh_msg_callback_ids_head; i++)
+	{
+		luaL_unref(LUAVM, LUA_REGISTRYINDEX, lh_msg_callback_ids[i]);
+	}
+	lh_msg_callback_ids_head = 0;
 }

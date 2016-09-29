@@ -6,8 +6,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-CHANNEL** channels;
-unsigned int channels_size;
+extern CHANNEL** channels;
+extern unsigned int channels_size;
 void irc_user_remove_user(const char* channel, const char* username)
 {
 	unsigned int i, j;
@@ -140,11 +140,10 @@ void irc_user_free_user(USER** user)
 }
 void irc_user_free_channel(CHANNEL** channel)
 {
-	CHANNEL* c;
+	CHANNEL* c = *channel;
 	unsigned int i;
-	if (channel == NULL)
+	if (c == NULL)
 		return;
-	c = *channel;
 	for (i = 0; i < c->users_last; i++)
 	{
 		irc_user_free_user(&(c->users[i]));
@@ -191,7 +190,7 @@ int irc_user_handleUserFlow(IRCHANDLE handle, const irc_command* cmd)
 	{
 		irc_user_get_user(cmd->receiver, cmd->sender);
 	}
-	else if (cmd->type == IRC_PART)
+	else if (cmd->type == IRC_PART || cmd->type == IRC_QUIT)
 	{
 		irc_user_remove_user(cmd->receiver, cmd->sender);
 	}

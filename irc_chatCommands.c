@@ -9,7 +9,7 @@
 #include <stdlib.h>
 
 
-CONFIG config;
+extern CONFIG config;
 char* botname;
 unsigned int botname_length;
 extern COMMANDCONTAINER* containers;
@@ -325,10 +325,9 @@ bool irc_chat_handle_chatcommands(IRCHANDLE handle, const irc_command* cmd)
 	}
 	return false;
 }
-void irc_chat_commands_init(CONFIG cfg)
+void irc_chat_commands_init()
 {
 	const char* botname_const;
-	config = cfg;
 	containers = (COMMANDCONTAINER*)malloc(sizeof(COMMANDCONTAINER) * BUFF_SIZE_TINY);
 	containers_index = 0;
 	containers_size = BUFF_SIZE_TINY;
@@ -342,6 +341,8 @@ void irc_chat_commands_uninit(void)
 {
 	unsigned int i;
 	unsigned int j;
+	if (containers == NULL)
+		return;
 	for (i = 0; i < containers_index; i++)
 	{
 		for (j = 0; j < containers[i].args_size; j++)
@@ -356,6 +357,7 @@ void irc_chat_commands_uninit(void)
 	botname_length = 0;
 	free(botname);
 	botname = NULL;
+	containers = NULL;
 }
 
 

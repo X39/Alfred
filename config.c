@@ -40,6 +40,8 @@ void FNC(data_destroy)(DATA** inPtr)
 	DATA* d = *inPtr;
 	DATA** children;
 	unsigned int i;
+	if (d == NULL)
+		return;
 	switch (d->type)
 	{
 		case DATATYPE_NODE:

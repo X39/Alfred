@@ -1,4 +1,4 @@
-function testCallback(content, receiver, sender, kind, from, to)
+alfred.registerCmd(function (content, receiver, sender, kind, from, to)
 	local numFrom = tonumber(from);
 	local numTo = tonumber(to);
 	if numFrom == nil or numTo == nil or numFrom > numTo then
@@ -6,6 +6,4 @@ function testCallback(content, receiver, sender, kind, from, to)
 	else
     	alfred.respond(tostring(math.random(from, to)), receiver, sender);
 	end
-end
-
-alfred.registerMsg(testCallback, "roll", "from=0;to=30000;", false, false);
+end, "roll", "from=0;to=30000;", false, false);

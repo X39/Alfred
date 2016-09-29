@@ -122,6 +122,17 @@ void FNC(register_callback_raw)(IRCHANDLE handle, IRCCALLBACKRAW callback)
 	irc->callbacks_raw[irc->callbacks_raw_next] = callback;
 	irc->callbacks_raw_next++;
 }
+
+void FNC(clear_callback)(IRCHANDLE handle)
+{
+	IRC* irc = (IRC*)handle;
+	irc->callbacks_next = 0;
+}
+void FNC(clear_callback_raw)(IRCHANDLE handle)
+{
+	IRC* irc = (IRC*)handle;
+	irc->callbacks_raw_next = 2; //2 <-- handle_ping & handle_commandCallbacks offset
+}
 int FNC(poll)(IRCHANDLE handle, char* buffer, unsigned int bufferSize)
 {
 	IRC* irc = (IRC*)handle;
@@ -294,6 +305,10 @@ int FNC(handle_commandCallbacks)(IRCHANDLE handle, const char* msg, unsigned int
 			{
 				cmd.type = IRC_NICK;
 			}
+			else if (strstr(type, "QUIT"))
+			{
+				cmd.type = IRC_QUIT;
+			}
 			else
 			{
 				printf("[INFO]\tUnknown type '%s'\n", type);
@@ -316,8 +331,50 @@ int FNC(handle_commandCallbacks)(IRCHANDLE handle, const char* msg, unsigned int
 int FNC(send_PRIVMSG)(IRCHANDLE handle, const char *msg, const char *receiver)
 {
 	char *privmsg;
-	unsigned int privmsg_size = strlen(msg) + strlen("PRIVMSG  :\r\n") + strlen(receiver);
-	privmsg = alloca(sizeof(char) * (privmsg_size + 1));
-	sprintf(privmsg, "PRIVMSG %s :%s\r\n", receiver, msg);
-	FNC(send)(handle, privmsg, privmsg_size);
+	char *privOff;
+	char *res;
+	unsigned int privmsg_size;
+
+	if (receiver[0] != '#' && (res = strchr(receiver, '!')) != NULL)
+	{
+		privmsg_size = strlen(msg) + strlen("PRIVMSG  :\r\n") + strlen(res - receiver + 1);
+		privOff = privmsg = alloca(sizeof(char) * (privmsg_size + 1));
+		privOff += sprintf(privmsg, "PRIVMSG ", receiver, msg);
+		strncpy(privmsg, recv, res - receiver);
+		privOff += res - receiver;
+		sprintf(privOff, " :%s\r\n", msg);
+		FNC(send)(handle, privmsg, privmsg_size);
+	}
+	else
+	{
+		privmsg_size = strlen(msg) + strlen("PRIVMSG  :\r\n") + strlen(receiver);
+		privmsg = alloca(sizeof(char) * (privmsg_size + 1));
+		sprintf(privmsg, "PRIVMSG %s :%s\r\n", receiver, msg);
+		FNC(send)(handle, privmsg, privmsg_size);
+	}
+}
+int FNC(send_PRIVMSG_ACTION)(IRCHANDLE handle, const char *msg, const char *receiver)
+{
+	char *privmsg;
+	char *privOff;
+	char *res;
+	unsigned int privmsg_size;
+
+	if (receiver[0] != '#' && (res = strchr(receiver, '!')) != NULL)
+	{
+		privmsg_size = strlen(msg) + strlen("PRIVMSG  :\1ACTION\1\r\n") + strlen(res - receiver + 1);
+		privOff = privmsg = alloca(sizeof(char) * (privmsg_size + 1));
+		privOff += sprintf(privmsg, "PRIVMSG ", receiver, msg);
+		strncpy(privmsg, recv, res - receiver);
+		privOff += res - receiver;
+		sprintf(privOff, " :\1ACTION%s\1\r\n", msg);
+		FNC(send)(handle, privmsg, privmsg_size);
+	}
+	else
+	{
+		privmsg_size = strlen(msg) + strlen("PRIVMSG  :\1ACTION\1\r\n") + strlen(receiver);
+		privmsg = alloca(sizeof(char) * (privmsg_size + 1));
+		sprintf(privmsg, "PRIVMSG %s :\1ACTION%s\1\r\n", receiver, msg);
+		FNC(send)(handle, privmsg, privmsg_size);
+	}
 }

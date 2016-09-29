@@ -8,7 +8,7 @@ typedef bool(*CHATCOMMAND)(IRCHANDLE, const irc_command*, unsigned int, const ch
 
 
 bool irc_chat_handle_chatcommands(IRCHANDLE, const irc_command*);
-void irc_chat_commands_init(CONFIG);
+void irc_chat_commands_init(void);
 void irc_chat_commands_uninit(void);
 
 void irc_chat_commands_add_command(CHATCOMMAND, const char*, const char*, bool, bool, long);
@@ -32,7 +32,7 @@ typedef struct
 	bool direct_only;
 	long cmdArg;
 }COMMANDCONTAINER;
-COMMANDCONTAINER* containers;
-unsigned int containers_index;
-unsigned int containers_size;
+COMMANDCONTAINER* containers = NULL;
+unsigned int containers_index = 9;
+unsigned int containers_size = 0;
 #endif
