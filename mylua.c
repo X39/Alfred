@@ -289,8 +289,9 @@ int luaopen_alfred_functions_inner(lua_State *L)
 		{ "sendPrivMsg", lh_sendprivmsg },				//alfred.sendprivmsg(message, receiver)
 		{ "respond", lh_respond },						//alfred.respond(message, receiver, sender)
 		{ "getRandomResponse", lh_getRandomResponse },	//alfred.getRandomResponse(responseType)
-		{ "setChannelVar", lh_setChannelVar },			//alfred.lh_setChannelVar(channel, namespace, variable, value)
-		{ "getChannelVar", lh_getChannelVar },			//alfred.lh_getChannelVar(channel, namespace, variable)
+		{ "setChannelVar", lh_setChannelVar },			//alfred.setChannelVar(channel, namespace, variable, value)
+		{ "getChannelVar", lh_getChannelVar },			//alfred.getChannelVar(channel, namespace, variable)
+		{ "getChannelList", lh_getChannelList },		//alfred.getChannelList()
 		{ NULL, NULL }
 	};
 	luaL_newlib(L, alfredlib);
