@@ -54,10 +54,7 @@ int lh_print(lua_State *L)
 			luaL_error(L, "Expected String");
 		}
 	}
-	if (nargs > 1)
-	{
-		printf("\n");
-	}
+	printf("\n");
 	return 0;
 }
 
@@ -137,7 +134,7 @@ bool lh_registermsg_callback(IRCHANDLE handle, const irc_command* cmd, unsigned 
 	int i;
 	lua_rawgeti(LUAVM, LUA_REGISTRYINDEX, (lua_Integer)cmdArg);
 
-	lua_pushstring(LUAVM, cmd->content);
+	lua_pushstring(LUAVM, cmd->content + 1);
 	lua_pushstring(LUAVM, cmd->receiver);
 	lua_pushstring(LUAVM, cmd->sender);
 	lua_pushinteger(LUAVM, cmd->type);
@@ -160,7 +157,7 @@ int lh_registerraw_callback(IRCHANDLE handle, const irc_command* cmd)
 	{
 		lua_rawgeti(LUAVM, LUA_REGISTRYINDEX, lh_raw_callback_ids[i]);
 
-		lua_pushstring(LUAVM, cmd->content);
+		lua_pushstring(LUAVM, cmd->content + 1);
 		lua_pushstring(LUAVM, cmd->receiver);
 		lua_pushstring(LUAVM, cmd->sender);
 		lua_pushinteger(LUAVM, cmd->type);
@@ -267,7 +264,7 @@ int lh_handle_PRIVMSG(IRCHANDLE handle, const irc_command *cmd)
 	{
 		lua_rawgeti(LUAVM, LUA_REGISTRYINDEX, lh_privmsg_callback_ids[i]);
 
-		lua_pushstring(LUAVM, cmd->content);
+		lua_pushstring(LUAVM, cmd->content + 1);
 		lua_pushstring(LUAVM, cmd->receiver);
 		lua_pushstring(LUAVM, cmd->sender);
 
