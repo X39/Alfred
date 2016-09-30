@@ -258,7 +258,7 @@ void irc_user_set_variable(USER* usr_hndl, const char* variable, const char* val
 		usr_hndl->var_values = realloc(usr_hndl->var_values, sizeof(char**) * usr_hndl->var_size);
 	}
 	usr_hndl->var_names[usr_hndl->var_head] = malloc(sizeof(char) * strlen(variable) + 1);
-	strcpy(usr_hndl->var_names[usr_hndl->var_head], value);
+	strcpy(usr_hndl->var_names[usr_hndl->var_head], variable);
 	usr_hndl->var_values[usr_hndl->var_head] = malloc(sizeof(char) * strlen(value) + 1);
 	strcpy(usr_hndl->var_values[usr_hndl->var_head], value);
 	usr_hndl->var_head++;
