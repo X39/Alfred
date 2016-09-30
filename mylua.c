@@ -249,6 +249,8 @@ int lh_getChannelList(lua_State *L)
 	{
 		if (channels[i] == NULL)
 			continue;
+		if (channels[i]->channel_name[0] != '#')
+			continue;
 		lua_pushnumber(L, i);
 		lua_pushstring(L, channels[i]->channel_name);
 		lua_settable(L, -3);

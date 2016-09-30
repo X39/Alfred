@@ -172,8 +172,17 @@ void irc_user_uninit(void)
 
 int irc_user_check_antiflood(const char* channel, const char* username)
 {
-	USER* u = (USER*)irc_user_get_user(channel, username);
+	USER* u;
 	time_t t = time(NULL), t2 = u->last_request;
+
+	if (channel[0] != '#')
+	{
+		u = (USER*)irc_user_get_user("~QUERY~", username);
+	}
+	else
+	{
+		u = (USER*)irc_user_get_user(channel, username);
+	}
 	u->last_request = t;
 	if (difftime(t, t2) < IRC_USER_ANTIFLOOD)
 	{
