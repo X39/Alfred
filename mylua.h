@@ -18,9 +18,10 @@ int lh_getChannelList(lua_State*);
 int lh_handle_PRIVMSG(IRCHANDLE, const irc_command*);
 int luaopen_alfred_functions(lua_State*);
 int lh_registermsg_callback(IRCHANDLE, const irc_command*, unsigned int, const char**, char*, unsigned int, long);
-int lh_registerraw_callback(IRCHANDLE, const irc_command*);
+int lh_register_callback(IRCHANDLE, const irc_command*);
 
 int lh_load_lua_modules(lua_State*);
+void lua_clear_handles();
 
 lua_State *currentL;
 

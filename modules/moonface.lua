@@ -18,39 +18,56 @@ alfred.registerMsg(function(c, recv, send)
         local attempts = tonumber(alfred.getChannelVar(recv, "mondspiel", "attempts"));
         local lastsolver = alfred.getChannelVar(recv, "mondspiel", "lastsolver");
         
-        if(lastsolver == send) then
-            alfred.setChannelVar(recv, "mondspiel", "attempts", tostring(attempts + 1));
-            alfred.respond("+1 attempt for trying to progress on your own.", recv, send);
-        elseif(currentExpected == 0) then
+        if(currentExpected == 0) then
             if(c ~= ". ") then
                 alfred.setChannelVar(recv, "mondspiel", "attempts", tostring(attempts + 1));
             else
-                alfred.setChannelVar(recv, "mondspiel", "current", tostring(currentExpected + 1));
-                alfred.setChannelVar(recv, "mondspiel", "lastsolver", send);
-                alfred.respond("dot", recv, send);
+                if(lastsolver == send) then
+                    alfred.setChannelVar(recv, "mondspiel", "attempts", tostring(attempts + 1));
+                    alfred.respond("+1 attempt for trying to progress on your own.", recv, send);
+                else
+                    alfred.setChannelVar(recv, "mondspiel", "current", tostring(currentExpected + 1));
+                    alfred.setChannelVar(recv, "mondspiel", "lastsolver", send);
+                    alfred.respond("dot", recv, send);
+                end
             end
         elseif(currentExpected == 1) then
             if(c ~= ". ") then
                 alfred.setChannelVar(recv, "mondspiel", "attempts", tostring(attempts + 1));
             else
-                alfred.setChannelVar(recv, "mondspiel", "current", tostring(currentExpected + 1));
-                alfred.setChannelVar(recv, "mondspiel", "lastsolver", send);
-                alfred.respond("dot dot", recv, send);
+                if(lastsolver == send) then
+                    alfred.setChannelVar(recv, "mondspiel", "attempts", tostring(attempts + 1));
+                    alfred.respond("+1 attempt for trying to progress on your own.", recv, send);
+                else
+                    alfred.setChannelVar(recv, "mondspiel", "current", tostring(currentExpected + 1));
+                    alfred.setChannelVar(recv, "mondspiel", "lastsolver", send);
+                    alfred.respond("dot dot", recv, send);
+                end
             end
         elseif(currentExpected == 2) then
             if(c ~= ", ") then
                 alfred.setChannelVar(recv, "mondspiel", "attempts", tostring(attempts + 1));
             else
-                alfred.setChannelVar(recv, "mondspiel", "current", tostring(currentExpected + 1));
-                alfred.setChannelVar(recv, "mondspiel", "lastsolver", send);
-                alfred.respond("dot dot comma", recv, send);
+                if(lastsolver == send) then
+                    alfred.setChannelVar(recv, "mondspiel", "attempts", tostring(attempts + 1));
+                    alfred.respond("+1 attempt for trying to progress on your own.", recv, send);
+                else
+                    alfred.setChannelVar(recv, "mondspiel", "current", tostring(currentExpected + 1));
+                    alfred.setChannelVar(recv, "mondspiel", "lastsolver", send);
+                    alfred.respond("dot dot comma", recv, send);
+                end
             end
         elseif(currentExpected == 3) then
             if(c ~= "- ") then
                 alfred.setChannelVar(recv, "mondspiel", "attempts", tostring(attempts + 1))
             else
-                alfred.setChannelVar(recv, "mondspiel", "running", "false");
-                alfred.respond("dot dot comma dash, required " .. tostring(attempts) .. " attempts to finish.", recv, send);
+                if(lastsolver == send) then
+                    alfred.setChannelVar(recv, "mondspiel", "attempts", tostring(attempts + 1));
+                    alfred.respond("+1 attempt for trying to progress on your own.", recv, send);
+                else
+                    alfred.setChannelVar(recv, "mondspiel", "running", "false");
+                    alfred.respond("dot dot comma dash, required " .. tostring(attempts) .. " attempts to finish.", recv, send);
+                end
             end
         end
     end

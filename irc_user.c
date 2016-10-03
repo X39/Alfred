@@ -41,39 +41,23 @@ void irc_user_remove_user(const char* channel, const char* username)
 }
 USER* irc_user_get_user(const char* channel, const char* username)
 {
-	unsigned int i, j;
+	unsigned int i;
 	int k = -1;
 	CHANNEL* c = NULL;
 	for (i = 0; i < channels_size; i++)
 	{
 		if (channels[i] == NULL)
 		{
-			if(k < 0)
+			if (k < 0)
 				k = i;
 			continue;
 		}
-		c = channels[i];
 		if (!strcmpi(channels[i]->channel_name, channel))
 		{
-			k = -1;
-			for (j = 0; j < channels[i]->users_size; j++)
-			{
-				if (channels[i]->users[j] == NULL)
-				{
-					if (k < 0)
-						k = j;
-					continue;
-				}
-				if (!strcmpi(channels[i]->users[j]->username, username))
-				{
-					return channels[i]->users[j];
-				}
-			}
+			c = channels[i];
 			break;
 		}
-		c = NULL;
 	}
-	
 	if (c == NULL)
 	{
 		if (k < 0)
@@ -83,45 +67,48 @@ USER* irc_user_get_user(const char* channel, const char* username)
 			channels = realloc(channels, sizeof(CHANNEL*) * channels_size);
 		}
 		channels[k] = malloc(sizeof(CHANNEL));
+
 		channels[k]->channel_name = (char*)malloc(sizeof(char*) * strlen(channel) + 1);
 		channels[k]->channel_name[strlen(channel)] = '\0';
 		strcpy(channels[k]->channel_name, channel);
+
 		channels[k]->users = malloc(sizeof(USER*) * BUFF_SIZE_SMALL);
 		channels[k]->users_size = BUFF_SIZE_SMALL;
 		channels[k]->users_last = 1;
 		memset(channels[k]->users, 0, sizeof(USER*) * BUFF_SIZE_SMALL);
-
-		channels[k]->users[0] = malloc(sizeof(USER));
-		channels[k]->users[0]->last_request = 0;
-		channels[k]->users[0]->var_names = malloc(sizeof(char**) * BUFF_SIZE_TINY);
-		channels[k]->users[0]->var_values = malloc(sizeof(char**) * BUFF_SIZE_TINY);
-		channels[k]->users[0]->var_size = BUFF_SIZE_TINY;
-		channels[k]->users[0]->var_head = 0;
-		channels[k]->users[0]->username = malloc(sizeof(char) * strlen(username) + 1);
-		strcpy(channels[k]->users[0]->username, username);
-		channels[k]->users[0]->username[strlen(username)] = '\0';
-		return channels[k]->users[0];
+		c = channels[k];
 	}
-	else
+	for (i = 0; i < c->users_last; i++)
 	{
-		if (channels[i]->users_last == channels[i]->users_size)
+		if (c->users[i] == NULL)
 		{
-			channels[i]->users_size += BUFF_INCREASE;
-			channels[i]->users = (USER**)realloc(channels[i]->users, sizeof(USER*) * channels[i]->users_size);
+			if (k < 0)
+				k = i;
+			continue;
 		}
-		k = channels[i]->users_last;
-		channels[i]->users[k] = (USER*)malloc(sizeof(USER));
-		channels[i]->users[k]->last_request = 0;
-		channels[i]->users[k]->username = (char*)malloc(sizeof(char) * strlen(username) + 1);
-		strcpy(channels[i]->users[k]->username, username);
-		channels[i]->users[k]->username[strlen(username)] = '\0';
-		channels[i]->users[k]->var_names = malloc(sizeof(char**) * BUFF_SIZE_TINY);
-		channels[i]->users[k]->var_values = malloc(sizeof(char**) * BUFF_SIZE_TINY);
-		channels[i]->users[k]->var_size = BUFF_SIZE_TINY;
-		channels[i]->users[k]->var_head = 0;
-		channels[i]->users_last++;
-		return channels[i]->users[k];
+		if (!strcmpi(c->users[i]->username, username))
+		{
+			return c->users[i];
+		}
 	}
+	if (c->users_last == c->users_size)
+	{
+		k = c->users_last;
+		c->users_size += BUFF_INCREASE;
+		c->users = (USER**)realloc(channels[i]->users, sizeof(USER*) * channels[i]->users_size);
+	}
+	k = c->users_last;
+	c->users[k] = (USER*)malloc(sizeof(USER));
+	c->users[k]->last_request = 0;
+	c->users[k]->username = (char*)malloc(sizeof(char) * strlen(username) + 1);
+	c->users[k]->username[strlen(username)] = '\0';
+	strcpy(c->users[k]->username, username);
+	c->users[k]->var_names = malloc(sizeof(char**) * BUFF_SIZE_TINY);
+	c->users[k]->var_values = malloc(sizeof(char**) * BUFF_SIZE_TINY);
+	c->users[k]->var_size = BUFF_SIZE_TINY;
+	c->users[k]->var_head = 0;
+	c->users_last++;
+	return c->users[k];
 }
 void irc_user_free_user(USER** user)
 {

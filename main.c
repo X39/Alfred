@@ -303,10 +303,10 @@ bool validate_config_requirements(void)
 	unsigned int p = 0;
 	char* key;
 
-	key = "root/connection/botname";	if ((p += config_get_key(config, key) == NULL)) printf("[ERRO]\tMissing key '%s'\n");
-	key = "root/connection/bottrigger"; if ((p += config_get_key(config, key) == NULL)) printf("[ERRO]\tMissing key '%s'\n");
-	key = "root/connection/ircport";	if ((p += config_get_key(config, key) == NULL)) printf("[ERRO]\tMissing key '%s'\n");
-	key = "root/connection/ircaddr";	if ((p += config_get_key(config, key) == NULL)) printf("[ERRO]\tMissing key '%s'\n");
+	key = "root/connection/botname";	if ((p += config_get_key(config, key) == NULL)) printf("[ERRO]\tMissing key '%s'\n", key);
+	key = "root/connection/bottrigger"; if ((p += config_get_key(config, key) == NULL)) printf("[ERRO]\tMissing key '%s'\n", key);
+	key = "root/connection/ircport";	if ((p += config_get_key(config, key) == NULL)) printf("[ERRO]\tMissing key '%s'\n", key);
+	key = "root/connection/ircaddr";	if ((p += config_get_key(config, key) == NULL)) printf("[ERRO]\tMissing key '%s'\n", key);
 
 	return p == 0;
 }
@@ -322,17 +322,16 @@ int reloadModules()
 	int i = 0;
 	irc_chat_commands_uninit();
 	irc_chat_commands_init();
-	i += lua_clear_handles();
+	lua_clear_handles();
 	irc_client_clear_callback_raw(handle);
 	irc_client_clear_callback(handle);
-
-	irc_client_register_callback_raw(handle, lh_registerraw_callback);
 
 	irc_client_register_callback(handle, handle_INVITE);
 	irc_client_register_callback(handle, handle_KICK);
 	irc_client_register_callback(handle, irc_chat_handle_chatcommands);
 	irc_client_register_callback(handle, irc_user_handleUserFlow);
 	irc_client_register_callback(handle, lh_handle_PRIVMSG);
+	irc_client_register_callback(handle, lh_register_callback);
 
 	irc_chat_commands_add_command(chatcmd_authed, "authed", "", false, true, 0);
 	irc_chat_commands_add_command(chatcmd_save, "save", "", true, true, 0);

@@ -38,7 +38,6 @@ int lh_print(lua_State *L)
 {
 	int nargs = lua_gettop(L);
 	int i;
-	char* c;
 	if (nargs >= 1)
 	{
 		printf("[LUA ]\t");
@@ -128,8 +127,9 @@ int lh_registerprivmsg(lua_State *L)
 	}
 	lh_privmsg_callback_ids[lh_privmsg_callback_ids_head] = luaL_ref(L, LUA_REGISTRYINDEX);
 	lh_privmsg_callback_ids_head++;
+	return 0;
 }
-bool lh_registermsg_callback(IRCHANDLE handle, const irc_command* cmd, unsigned int argc, const char** args, char* buffer, unsigned int buffer_size, long cmdArg)
+BOOL lh_registermsg_callback(IRCHANDLE handle, const irc_command* cmd, unsigned int argc, const char** args, char* buffer, unsigned int buffer_size, long cmdArg)
 {
 	int i;
 	lua_rawgeti(LUAVM, LUA_REGISTRYINDEX, (lua_Integer)cmdArg);
@@ -150,7 +150,7 @@ bool lh_registermsg_callback(IRCHANDLE handle, const irc_command* cmd, unsigned 
 	}
 	return false;
 }
-int lh_registerraw_callback(IRCHANDLE handle, const irc_command* cmd)
+int lh_register_callback(IRCHANDLE handle, const irc_command* cmd)
 {
 	int i, j;
 	for (i = 0; i < lh_raw_callback_ids_head; i++)
@@ -259,7 +259,7 @@ int lh_handle_PRIVMSG(IRCHANDLE handle, const irc_command *cmd)
 {
 	int i, j;
 	if (cmd->type != IRC_PRIVMSG)
-		return;
+		return 0;
 	for (i = 0; i < lh_privmsg_callback_ids_head; i++)
 	{
 		lua_rawgeti(LUAVM, LUA_REGISTRYINDEX, lh_privmsg_callback_ids[i]);
@@ -353,6 +353,7 @@ int lh_load_lua_modules(lua_State *L)
 
 	printf("[LMOD]\tLoaded %d modules\n", modCount);
 	tinydir_close(&dir);
+	return 0;
 }
 
 void lua_clear_handles()

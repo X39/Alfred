@@ -196,11 +196,11 @@ void FNC(save_helper)(FILE* f, DATA* d, unsigned int tabcount)
 		}
 		if (containsString)
 		{
-			fprintf(f, ">", d->name);
+			fprintf(f, ">");
 		}
 		else
 		{
-			fprintf(f, ">\n", d->name);
+			fprintf(f, ">\n");
 		}
 		for (i = 0; i < d->value_length; i++)
 		{

@@ -343,14 +343,14 @@ int FNC(send_PRIVMSG)(IRCHANDLE handle, const char *msg, const char *receiver)
 		strncpy(privmsg, recv, res - receiver);
 		privOff += res - receiver;
 		sprintf(privOff, " :%s\r\n", msg);
-		FNC(send)(handle, privmsg, privmsg_size);
+		return FNC(send)(handle, privmsg, privmsg_size);
 	}
 	else
 	{
 		privmsg_size = strlen(msg) + strlen("PRIVMSG  :\r\n") + strlen(receiver);
 		privmsg = alloca(sizeof(char) * (privmsg_size + 1));
 		sprintf(privmsg, "PRIVMSG %s :%s\r\n", receiver, msg);
-		FNC(send)(handle, privmsg, privmsg_size);
+		return FNC(send)(handle, privmsg, privmsg_size);
 	}
 }
 int FNC(send_PRIVMSG_ACTION)(IRCHANDLE handle, const char *msg, const char *receiver)
@@ -368,13 +368,13 @@ int FNC(send_PRIVMSG_ACTION)(IRCHANDLE handle, const char *msg, const char *rece
 		strncpy(privmsg, recv, res - receiver);
 		privOff += res - receiver;
 		sprintf(privOff, " :\1ACTION%s\1\r\n", msg);
-		FNC(send)(handle, privmsg, privmsg_size);
+		return FNC(send)(handle, privmsg, privmsg_size);
 	}
 	else
 	{
 		privmsg_size = strlen(msg) + strlen("PRIVMSG  :\1ACTION\1\r\n") + strlen(receiver);
 		privmsg = alloca(sizeof(char) * (privmsg_size + 1));
 		sprintf(privmsg, "PRIVMSG %s :\1ACTION%s\1\r\n", receiver, msg);
-		FNC(send)(handle, privmsg, privmsg_size);
+		return FNC(send)(handle, privmsg, privmsg_size);
 	}
 }
