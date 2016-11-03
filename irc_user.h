@@ -39,6 +39,9 @@ Callback function for <irc.h>
 int irc_user_handleUserFlow(IRCHANDLE, const irc_command*);
 
 void irc_user_remove_user(const char*, const char*);
+void irc_user_rename(USER*, const char*);
+CHANNEL* irc_user_try_get_channel(const char*);
+USER* irc_user_try_get_user(const char*, const char*);
 USER* irc_user_get_user(const char*, const char*);
 void irc_user_free_user(USER**);
 void irc_user_free_channel(CHANNEL**);

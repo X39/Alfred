@@ -14,30 +14,72 @@ void irc_user_remove_user(const char* channel, const char* username)
 	CHANNEL* c = NULL;
 	for (i = 0; i < channels_size; i++)
 	{
-		if (channels[i] == NULL)
+		c = channels[i];
+		if (c == NULL)
 		{
 			continue;
 		}
-		c = channels[i];
-		if (!strcmpi(channels[i]->channel_name, channel))
+		if (!strcmpi(c->channel_name, channel))
 		{
-			for (j = 0; j < channels[i]->users_size; j++)
+			for (j = 0; j < c->users_last; j++)
 			{
-				if (channels[i]->users[j] == NULL)
+				if (!strcmpi(c->users[j]->username, username))
 				{
-					continue;
-				}
-				if (!strcmpi(channels[i]->users[j]->username, username))
-				{
-					irc_user_free_user(channels[i]->users + j);
-					channels[i]->users_last--;
-					channels[i]->users[j] = channels[i]->users[channels[i]->users_last];
+					irc_user_free_user(c->users + j);
+					c->users_last--;
+					c->users[j] = c->users[c->users_last];
 					break;
 				}
 			}
 		}
 		break;
 	}
+}
+void irc_user_rename(USER* user, const char *newName)
+{
+	unsigned int len = strlen(newName);
+	free(user->username);
+	user->username = malloc(sizeof(char) * (len + 1));
+	strcpy(user->username, newName);
+	user->username[len] = '\0';
+}
+CHANNEL* irc_user_try_get_channel(const char *channel)
+{
+	unsigned int i;
+	CHANNEL* c = NULL;
+	for (i = 0; i < channels_size; i++)
+	{
+		if (channels[i] == NULL)
+		{
+			continue;
+		}
+		if (!strcmp(channels[i]->channel_name, channel))
+		{
+			c = channels[i];
+			break;
+		}
+	}
+	return c;
+}
+USER* irc_user_try_get_user(const char *channel, const char *username)
+{
+	unsigned int i;
+	CHANNEL *c = irc_user_try_get_channel(channel);
+	if(c == NULL)
+		return NULL;
+	
+	for (i = 0; i < c->users_last; i++)
+	{
+		if (c->users[i] == NULL)
+		{
+			continue;
+		}
+		if (!strcmp(c->users[i]->username, username))
+		{
+			return c->users[i];
+		}
+	}
+	return NULL;
 }
 USER* irc_user_get_user(const char* channel, const char* username)
 {
@@ -52,7 +94,7 @@ USER* irc_user_get_user(const char* channel, const char* username)
 				k = i;
 			continue;
 		}
-		if (!strcmpi(channels[i]->channel_name, channel))
+		if (!strcmp(channels[i]->channel_name, channel))
 		{
 			c = channels[i];
 			break;
@@ -86,7 +128,7 @@ USER* irc_user_get_user(const char* channel, const char* username)
 				k = i;
 			continue;
 		}
-		if (!strcmpi(c->users[i]->username, username))
+		if (!strcmp(c->users[i]->username, username))
 		{
 			return c->users[i];
 		}
@@ -95,7 +137,7 @@ USER* irc_user_get_user(const char* channel, const char* username)
 	{
 		k = c->users_last;
 		c->users_size += BUFF_INCREASE;
-		c->users = (USER**)realloc(channels[i]->users, sizeof(USER*) * channels[i]->users_size);
+		c->users = (USER**)realloc(c->users, sizeof(USER*) * c->users_size);
 	}
 	k = c->users_last;
 	c->users[k] = (USER*)malloc(sizeof(USER));
@@ -185,6 +227,7 @@ int irc_user_handleUserFlow(IRCHANDLE handle, const irc_command* cmd)
 	const char* content = cmd->content;
 	const char* res;
 	char* buffer, *buffer2;
+	USER* usr;
 	if (cmd->type == IRC_JOIN)
 	{
 		irc_user_get_user(cmd->receiver, cmd->sender);
@@ -208,6 +251,19 @@ int irc_user_handleUserFlow(IRCHANDLE handle, const irc_command* cmd)
 			buffer2[i] = '\0';
 			strncpy(buffer2, content, i);
 			irc_user_get_user(buffer, buffer2);
+		}
+	}
+	else if(cmd->type == IRC_NICK)
+	{
+		for(i = 0; i < channels_size; i++)
+		{
+			if(channels[i] == NULL)
+				break;
+			usr = irc_user_try_get_user(channels[i]->channel_name, cmd->sender);
+			if(usr != NULL)
+			{
+				irc_user_rename(usr, cmd->content + 1);
+			}
 		}
 	}
 	return false;
