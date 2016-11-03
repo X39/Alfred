@@ -72,3 +72,4 @@ alfred.registerMsg(function(c, recv, send)
         end
     end
 end);
+
